@@ -1,0 +1,372 @@
+﻿<!doctype html>
+<html lang="ru" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TaskbarFold: папки на панели задач Windows</title>
+<meta name="description" content="Бесплатная утилита с открытым кодом: мини-папки на панели задач Windows 10 и 11. Клик по группе открывает компактное окно с иконками приложений.">
+<meta name="color-scheme" content="dark light">
+
+<link rel="canonical" href="https://taskbarfold.duckapps.ru/">
+<link rel="alternate" hreflang="ru" href="https://taskbarfold.duckapps.ru/">
+<link rel="alternate" hreflang="en" href="https://taskbarfold.duckapps.ru/en/">
+<link rel="alternate" hreflang="x-default" href="https://taskbarfold.duckapps.ru/en/">
+
+<meta property="og:type" content="website">
+<meta property="og:locale" content="ru_RU">
+<meta property="og:title" content="TaskbarFold: папки на панели задач Windows">
+<meta property="og:description" content="Бесплатно и с открытым кодом. Четыре группы на панели задач вместо тридцати иконок.">
+<meta property="og:url" content="https://taskbarfold.duckapps.ru/">
+<meta property="og:image" content="https://taskbarfold.duckapps.ru/screenshots/flyout.png">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/icons.css">
+<link rel="stylesheet" href="assets/site.css">
+<script src="assets/site.js" defer></script>
+</head>
+
+<body>
+<a class="skip" href="#main">К содержанию</a>
+
+<header class="nav" id="top">
+  <div class="nav__in">
+    <a class="brand" href="#top">
+      <svg class="brand__mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+        <rect x="1" y="1" width="30" height="30" rx="9" class="brand__plate"/>
+        <rect x="8"  y="8"  width="6.5" height="6.5" rx="2.2" class="brand__dot"/>
+        <rect x="17.5" y="8"  width="6.5" height="6.5" rx="2.2" class="brand__dot"/>
+        <rect x="8"  y="17.5" width="6.5" height="6.5" rx="2.2" class="brand__dot"/>
+        <rect x="17.5" y="17.5" width="6.5" height="6.5" rx="2.2" class="brand__dot brand__dot--lit"/>
+      </svg>
+      <span class="brand__name">TaskbarFold</span>
+    </a>
+
+    <nav class="nav__links" aria-label="Разделы">
+      <a href="#why">Зачем</a>
+      <a href="#features">Возможности</a>
+      <a href="#how">Как это работает</a>
+      <a href="#free">Бесплатно</a>
+      <a href="#faq">Вопросы</a>
+    </nav>
+
+    <div class="nav__act">
+      <a class="iconbtn" href="en/" hreflang="en" lang="en" aria-label="Read this page in English">EN</a>
+      <button class="iconbtn" id="theme" type="button" aria-label="Переключить тему">
+        <i class="ph ph-moon" aria-hidden="true"></i>
+      </button>
+      <a class="iconbtn iconbtn--gh" href="https://github.com/stavtime/taskbarfold" aria-label="GitHub">
+        <i class="ph ph-github-logo" aria-hidden="true"></i>
+      </a>
+      <a class="btn btn--sm" href="https://github.com/stavtime/taskbarfold/releases/latest">Скачать</a>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- Hero: asymmetric split -->
+  <section class="hero">
+    <div class="wrap hero__grid">
+      <div class="hero__copy">
+        <p class="eyebrow">Бесплатно и с открытым кодом</p>
+        <h1 class="display">Папки на панели задач Windows</h1>
+        <p class="lead">
+          Клик по группе открывает компактное окно с иконками приложений. Четыре группы вместо тридцати ярлыков.
+        </p>
+        <div class="row">
+          <a class="btn btn--lg" href="https://github.com/stavtime/taskbarfold/releases/latest">
+            <i class="ph ph-download-simple" aria-hidden="true"></i>
+            <span>Скачать</span>
+          </a>
+          <a class="btn btn--ghost btn--lg" href="https://github.com/stavtime/taskbarfold">
+            <i class="ph ph-github-logo" aria-hidden="true"></i>
+            <span>GitHub</span>
+          </a>
+        </div>
+      </div>
+
+      <figure class="hero__shot shot">
+        <img src="screenshots/flyout.png" width="422" height="244"
+             alt="Всплывающее окно TaskbarFold с иконками приложений"
+             data-slot="screenshots/flyout.png" data-size="1280 x 720">
+      </figure>
+    </div>
+  </section>
+
+  <!-- Why: full-bleed statement band -->
+  <section class="band" id="why">
+    <div class="wrap">
+      <h2 class="h2 band__title">Панель задач кончается на пятнадцатой иконке</h2>
+      <p class="band__body">
+        Windows не умеет группировать закреплённые ярлыки: ни папок, ни вложенности. После десятка иконок ряд превращается в свалку, которую приходится разглядывать.
+      </p>
+
+      <div class="band__pair">
+        <figure class="shot shot--wide">
+          <img src="screenshots/taskbar-before.png" width="1200" height="200"
+               alt="Панель задач с большим числом отдельных иконок"
+               data-slot="screenshots/taskbar-before.png" data-size="1200 x 200">
+          <figcaption>Без TaskbarFold</figcaption>
+        </figure>
+        <figure class="shot shot--wide">
+          <img src="screenshots/taskbar-after.png" width="1200" height="200"
+               alt="Панель задач с четырьмя группами TaskbarFold"
+               data-slot="screenshots/taskbar-after.png" data-size="1200 x 200">
+          <figcaption>С TaskbarFold</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features: bento -->
+  <section class="sec" id="features">
+    <div class="wrap">
+      <h2 class="h2 reveal">Сделано под то, как панелью задач пользуются на самом деле</h2>
+
+      <div class="bento">
+        <article class="cell cell--hero reveal">
+          <div class="cell__text">
+            <h3>Открывается мгновенно</h3>
+            <p>
+              Резидент в трее держит окно каждой группы уже собранным. Клик показывает готовое окно, а не запускает новый процесс.
+            </p>
+          </div>
+          <div class="cell__shot shot">
+            <img src="screenshots/search.png" width="900" height="640"
+                 alt="Фильтрация иконок вводом текста"
+                 data-slot="screenshots/search.png" data-size="900 x 640">
+          </div>
+        </article>
+
+        <article class="cell reveal">
+          <i class="ph ph-keyboard cell__icon" aria-hidden="true"></i>
+          <h3>Всё с клавиатуры</h3>
+          <p>Набор текста фильтрует группу, цифра запускает приложение по позиции.</p>
+          <p class="keys" aria-hidden="true">
+            <kbd>A-Z</kbd><kbd>1-9</kbd><kbd>&uarr;</kbd><kbd>&darr;</kbd><kbd>Enter</kbd><kbd>Esc</kbd>
+          </p>
+        </article>
+
+        <article class="cell cell--tint reveal">
+          <i class="ph ph-monitor cell__icon" aria-hidden="true"></i>
+          <h3>Тот монитор, та сторона</h3>
+          <p>
+            Per-monitor v2 DPI. Окно прижимается к панели задач того экрана, где курсор, включая режим автоскрытия.
+          </p>
+        </article>
+
+        <article class="cell reveal">
+          <i class="ph ph-storefront cell__icon" aria-hidden="true"></i>
+          <h3>Приложения из Store</h3>
+          <p>
+            Упакованные приложения находятся вместе с их AppUserModelID и запускаются через оболочку.
+          </p>
+        </article>
+
+        <article class="cell reveal">
+          <div class="swatch" aria-hidden="true"><span></span><span></span></div>
+          <h3>Светлая и тёмная</h3>
+          <p>
+            По умолчанию следует настройке Windows, с акриловым фоном там, где его даёт Windows 11.
+          </p>
+        </article>
+
+        <article class="cell reveal">
+          <i class="ph ph-arrows-clockwise cell__icon" aria-hidden="true"></i>
+          <h3>Битые ярлыки чинятся</h3>
+          <p>
+            Переехавшее приложение ищется по имени файла и привязывается заново, а не остаётся мёртвой иконкой.
+          </p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- How it works: sticky visual + rail -->
+  <section class="sec sec--alt" id="how">
+    <div class="wrap how">
+      <div class="how__vis">
+        <figure class="shot">
+          <img src="screenshots/settings.png" width="1000" height="680"
+               alt="Окно настроек TaskbarFold"
+               data-slot="screenshots/settings.png" data-size="1280 x 860">
+        </figure>
+      </div>
+
+      <div class="how__rail">
+        <h2 class="h2">От установки до закреплённой группы</h2>
+
+        <div class="step reveal">
+          <h3>Создать группу</h3>
+          <p>
+            Имя, цвет, число колонок. У группы есть постоянный идентификатор, поэтому переименование не ломает закрепление.
+          </p>
+        </div>
+
+        <div class="step reveal">
+          <h3>Добавить ярлыки</h3>
+          <p>
+            Перетащить из Проводника, выбрать файл или дважды кликнуть по строке в списке установленных приложений.
+          </p>
+        </div>
+
+        <div class="step reveal">
+          <h3>Закрепить</h3>
+          <p>
+            Одна кнопка создаёт ярлык и открывает Проводник с ним выделенным. Перетащите его на панель задач, и группа работает.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Free: tinted full-bleed band -->
+  <section class="free" id="free">
+    <div class="wrap free__in">
+      <p class="eyebrow">Цена</p>
+      <h2 class="display display--sm">Бесплатно, и останется бесплатным</h2>
+
+      <ul class="facts">
+        <li>Без рекламы</li>
+        <li>Без телеметрии</li>
+        <li>Без аккаунта</li>
+        <li>Без платной версии</li>
+      </ul>
+
+      <p class="free__note">
+        Исходный код опубликован под лицензией MIT: читайте, собирайте, меняйте, выпускайте свою сборку.
+      </p>
+      <p class="row">
+        <a class="btn btn--lg" href="https://github.com/stavtime/taskbarfold/releases/latest">
+          <i class="ph ph-download-simple" aria-hidden="true"></i>
+          <span>Скачать</span>
+        </a>
+        <a class="link" href="https://github.com/stavtime/taskbarfold/blob/main/LICENSE">Читать лицензию</a>
+      </p>
+    </div>
+  </section>
+
+  <!-- Comparison: paired rows -->
+  <section class="sec" id="compare">
+    <div class="wrap">
+      <h2 class="h2">Что изменилось после taskbar-groups</h2>
+      <p class="sub">
+        Проект с открытым кодом, который решил эту задачу первым, заброшен с января 2021 года и написан на фреймворке старше Windows 11. TaskbarFold реализует ту же идею заново.
+      </p>
+
+      <div class="pairs">
+        <div class="pair reveal">
+          <p class="pair__old">Холодный старт процесса на каждый клик</p>
+          <p class="pair__new">Резидент в трее с уже готовым окном</p>
+        </div>
+        <div class="pair reveal">
+          <p class="pair__old">Размеры в пикселях, без учёта DPI</p>
+          <p class="pair__new">Per-monitor v2, все размеры в DIP</p>
+        </div>
+        <div class="pair reveal">
+          <p class="pair__old">Индекс монитора считался неверно</p>
+          <p class="pair__new">Сторона панели задач определяется для каждого монитора</p>
+        </div>
+        <div class="pair reveal">
+          <p class="pair__old">Конфиг рядом с .exe, нужны права администратора</p>
+          <p class="pair__new">Конфиг в %APPDATA%, без повышения прав</p>
+        </div>
+        <div class="pair reveal">
+          <p class="pair__old">Переименование группы ломало закрепление</p>
+          <p class="pair__new">Группа опознаётся по постоянному идентификатору</p>
+        </div>
+        <div class="pair reveal">
+          <p class="pair__old">Внутри группы нет поиска</p>
+          <p class="pair__new">Набор текста фильтрует, цифры запускают</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ: accordion -->
+  <section class="sec sec--alt" id="faq">
+    <div class="wrap">
+      <h2 class="h2">Вопросы</h2>
+
+      <details class="qa">
+        <summary><span>Почему закрепление не в один клик?</span><i class="ph ph-caret-down" aria-hidden="true"></i></summary>
+        <p>
+          Windows 10 и 11 намеренно закрыли API для закрепления на панели задач, а обходные пути через реестр ломаются обновлениями. TaskbarFold готовит правильный ярлык и отдаёт его выделенным в Проводнике. Последнее перетаскивание за вами.
+        </p>
+      </details>
+
+      <details class="qa">
+        <summary><span>Нужны ли права администратора?</span><i class="ph ph-caret-down" aria-hidden="true"></i></summary>
+        <p>
+          Нет. Установщик ставит приложение для текущего пользователя, конфиг лежит в %APPDATA%, повышение прав не запрашивается.
+        </p>
+      </details>
+
+      <details class="qa">
+        <summary><span>Работает ли на Windows 10?</span><i class="ph ph-caret-down" aria-hidden="true"></i></summary>
+        <p>
+          Да, начиная со сборки 1809. Акриловый фон доступен только на Windows 11, на Windows 10 используется сплошной цвет с прозрачностью.
+        </p>
+      </details>
+
+      <details class="qa">
+        <summary><span>Нужно ли ставить .NET?</span><i class="ph ph-caret-down" aria-hidden="true"></i></summary>
+        <p>
+          Нет. Портативная сборка это один самодостаточный исполняемый файл без внешних зависимостей.
+        </p>
+      </details>
+
+      <details class="qa">
+        <summary><span>Собирает ли приложение данные?</span><i class="ph ph-caret-down" aria-hidden="true"></i></summary>
+        <p>
+          Нет. Единственный сетевой запрос это проверка обновлений на GitHub, не чаще раза в сутки и никогда не блокирующая интерфейс.
+        </p>
+      </details>
+    </div>
+  </section>
+
+  <!-- Download -->
+  <section class="cta" id="download">
+    <div class="wrap wrap--narrow cta__in">
+      <h2 class="h2">Скачать TaskbarFold</h2>
+      <p class="sub">Установщик для текущего пользователя или портативный zip. Оба варианта бесплатны.</p>
+      <a class="btn btn--lg" href="https://github.com/stavtime/taskbarfold/releases/latest">
+        <i class="ph ph-download-simple" aria-hidden="true"></i>
+        <span>Скачать</span>
+      </a>
+      <p class="specs">
+        <span>0.1.0</span>
+        <span>Windows 10 (1809+) и Windows 11</span>
+        <span>x64</span>
+        <span>Лицензия MIT</span>
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap foot__in">
+    <a class="brand" href="#top">
+      <svg class="brand__mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+        <rect x="1" y="1" width="30" height="30" rx="9" class="brand__plate"/>
+        <rect x="8"  y="8"  width="6.5" height="6.5" rx="2.2" class="brand__dot"/>
+        <rect x="17.5" y="8"  width="6.5" height="6.5" rx="2.2" class="brand__dot"/>
+        <rect x="8"  y="17.5" width="6.5" height="6.5" rx="2.2" class="brand__dot"/>
+        <rect x="17.5" y="17.5" width="6.5" height="6.5" rx="2.2" class="brand__dot brand__dot--lit"/>
+      </svg>
+      <span class="brand__name">TaskbarFold</span>
+    </a>
+    <nav class="foot__links" aria-label="Ссылки">
+      <a href="en/" hreflang="en" lang="en">English</a>
+      <a href="https://github.com/stavtime/taskbarfold">GitHub</a>
+      <a href="https://github.com/stavtime/taskbarfold/releases">Релизы</a>
+      <a href="https://github.com/stavtime/taskbarfold/issues">Сообщить об ошибке</a>
+      <a href="https://github.com/stavtime/taskbarfold/blob/main/LICENSE">Лицензия MIT</a>
+    </nav>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,30 @@
+@font-face {
+  font-family: "Phosphor";
+  src: url("./Phosphor.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+
+.ph {
+  font-family: "Phosphor" !important;
+  speak: never;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.ph.ph-arrows-clockwise::before { content: "\e094"; }
+.ph.ph-caret-down::before { content: "\e136"; }
+.ph.ph-download-simple::before { content: "\e20c"; }
+.ph.ph-github-logo::before { content: "\e576"; }
+.ph.ph-image::before { content: "\e2ca"; }
+.ph.ph-keyboard::before { content: "\e2d8"; }
+.ph.ph-monitor::before { content: "\e32e"; }
+.ph.ph-moon::before { content: "\e330"; }
+.ph.ph-storefront::before { content: "\e470"; }
+.ph.ph-sun::before { content: "\e472"; }

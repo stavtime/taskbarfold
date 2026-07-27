@@ -1,0 +1,14 @@
+<Project>
+
+  <!--
+    CA1416 (platform compatibility) is suppressed solution-wide in Directory.Build.props:
+    every project is Windows-only by design and the analyzer is noisy across P/Invoke wrappers.
+    Everything else is an error, including nullable diagnostics.
+  -->
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <DebugType>embedded</DebugType>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+
+</Project>

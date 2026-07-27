@@ -1,0 +1,37 @@
+# Build output
+bin/
+obj/
+artifacts/
+*.user
+*.suo
+
+# Publish and packaging output
+publish/
+installer/Output/
+*.msi
+*.exe
+*.zip
+
+# The application icon is a checked-in binary asset, not build output.
+!src/TaskbarFold.App/Assets/*.ico
+
+# IDE
+.vs/
+.idea/
+*.DotSettings.user
+
+# Test and coverage
+TestResults/
+coverage*.json
+coverage*.xml
+*.coverage
+
+# Secrets, never committed
+creds.md
+*.pem
+*.key
+
+# OS
+Thumbs.db
+desktop.ini
+.DS_Store

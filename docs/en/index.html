@@ -1,0 +1,372 @@
+﻿<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TaskbarFold: folders for the Windows taskbar</title>
+<meta name="description" content="A free, open-source utility for Windows 10 and 11. Click a pinned group and get a compact flyout of application icons, like folders on a phone.">
+<meta name="color-scheme" content="dark light">
+
+<link rel="canonical" href="https://taskbarfold.duckapps.ru/en/">
+<link rel="alternate" hreflang="ru" href="https://taskbarfold.duckapps.ru/">
+<link rel="alternate" hreflang="en" href="https://taskbarfold.duckapps.ru/en/">
+<link rel="alternate" hreflang="x-default" href="https://taskbarfold.duckapps.ru/en/">
+
+<meta property="og:type" content="website">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="TaskbarFold: folders for the Windows taskbar">
+<meta property="og:description" content="Free and open source. Four groups on the taskbar instead of thirty icons.">
+<meta property="og:url" content="https://taskbarfold.duckapps.ru/en/">
+<meta property="og:image" content="https://taskbarfold.duckapps.ru/screenshots/flyout.png">
+<meta name="twitter:card" content="summary_large_image">
+
+<link rel="icon" href="../assets/logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../assets/icons.css">
+<link rel="stylesheet" href="../assets/site.css">
+<script src="../assets/site.js" defer></script>
+</head>
+
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav" id="top">
+  <div class="nav__in">
+    <a class="brand" href="#top">
+      <svg class="brand__mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+        <rect x="1" y="1" width="30" height="30" rx="9" class="brand__plate"/>
+        <rect x="8"  y="8"  width="6.5" height="6.5" rx="2.2" class="brand__dot"/>
+        <rect x="17.5" y="8"  width="6.5" height="6.5" rx="2.2" class="brand__dot"/>
+        <rect x="8"  y="17.5" width="6.5" height="6.5" rx="2.2" class="brand__dot"/>
+        <rect x="17.5" y="17.5" width="6.5" height="6.5" rx="2.2" class="brand__dot brand__dot--lit"/>
+      </svg>
+      <span class="brand__name">TaskbarFold</span>
+    </a>
+
+    <nav class="nav__links" aria-label="Sections">
+      <a href="#why">Why</a>
+      <a href="#features">Features</a>
+      <a href="#how">How it works</a>
+      <a href="#free">Free</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+
+    <div class="nav__act">
+      <a class="iconbtn" href="../" hreflang="ru" lang="ru" aria-label="Читать эту страницу по-русски">RU</a>
+      <button class="iconbtn" id="theme" type="button" aria-label="Switch theme">
+        <i class="ph ph-moon" aria-hidden="true"></i>
+      </button>
+      <a class="iconbtn iconbtn--gh" href="https://github.com/stavtime/taskbarfold" aria-label="GitHub">
+        <i class="ph ph-github-logo" aria-hidden="true"></i>
+      </a>
+      <a class="btn btn--sm" href="https://github.com/stavtime/taskbarfold/releases/latest">Download</a>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- Hero: asymmetric split -->
+  <section class="hero">
+    <div class="wrap hero__grid">
+      <div class="hero__copy">
+        <p class="eyebrow">Free and open source</p>
+        <h1 class="display">Folders for the Windows taskbar</h1>
+        <p class="lead">
+          One click on a group opens a compact panel of application icons. Four groups instead of thirty pinned shortcuts.
+        </p>
+        <div class="row">
+          <a class="btn btn--lg" href="https://github.com/stavtime/taskbarfold/releases/latest">
+            <i class="ph ph-download-simple" aria-hidden="true"></i>
+            <span>Download</span>
+          </a>
+          <a class="btn btn--ghost btn--lg" href="https://github.com/stavtime/taskbarfold">
+            <i class="ph ph-github-logo" aria-hidden="true"></i>
+            <span>GitHub</span>
+          </a>
+        </div>
+      </div>
+
+      <figure class="hero__shot shot">
+        <img src="../screenshots/flyout.png" width="422" height="244"
+             alt="The TaskbarFold flyout showing a grid of application icons"
+             data-slot="screenshots/flyout.png" data-size="1280 x 720">
+      </figure>
+    </div>
+  </section>
+
+  <!-- Why: full-bleed statement band -->
+  <section class="band" id="why">
+    <div class="wrap">
+      <h2 class="h2 band__title">The taskbar runs out at the fifteenth icon</h2>
+      <p class="band__body">
+        Windows cannot group pinned shortcuts. There are no folders and no nesting. Past a dozen icons the row turns into a pile you scan instead of read.
+      </p>
+
+      <div class="band__pair">
+        <figure class="shot shot--wide">
+          <img src="../screenshots/taskbar-before.png" width="1200" height="200"
+               alt="A taskbar crowded with individual pinned icons"
+               data-slot="screenshots/taskbar-before.png" data-size="1200 x 200">
+          <figcaption>Without TaskbarFold</figcaption>
+        </figure>
+        <figure class="shot shot--wide">
+          <img src="../screenshots/taskbar-after.png" width="1200" height="200"
+               alt="The same taskbar with four TaskbarFold groups"
+               data-slot="screenshots/taskbar-after.png" data-size="1200 x 200">
+          <figcaption>With TaskbarFold</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features: bento -->
+  <section class="sec" id="features">
+    <div class="wrap">
+      <h2 class="h2 reveal">Built for the way the taskbar is actually used</h2>
+
+      <div class="bento">
+        <article class="cell cell--hero reveal">
+          <div class="cell__text">
+            <h3>Opens instantly</h3>
+            <p>
+              A tray process keeps every group window built and warm. Clicking a group shows it. It does not start a new process.
+            </p>
+          </div>
+          <div class="cell__shot shot">
+            <img src="../screenshots/search.png" width="900" height="640"
+                 alt="Typing filters the icons inside a group"
+                 data-slot="screenshots/search.png" data-size="900 x 640">
+          </div>
+        </article>
+
+        <article class="cell reveal">
+          <i class="ph ph-keyboard cell__icon" aria-hidden="true"></i>
+          <h3>Keyboard first</h3>
+          <p>Type to filter the group, press a digit to launch by position.</p>
+          <p class="keys" aria-hidden="true">
+            <kbd>A-Z</kbd><kbd>1-9</kbd><kbd>&uarr;</kbd><kbd>&darr;</kbd><kbd>Enter</kbd><kbd>Esc</kbd>
+          </p>
+        </article>
+
+        <article class="cell cell--tint reveal">
+          <i class="ph ph-monitor cell__icon" aria-hidden="true"></i>
+          <h3>Right monitor, right edge</h3>
+          <p>
+            Per-monitor v2 DPI. The panel snaps to the taskbar of the screen holding the cursor, auto-hide included.
+          </p>
+        </article>
+
+        <article class="cell reveal">
+          <i class="ph ph-storefront cell__icon" aria-hidden="true"></i>
+          <h3>Store apps too</h3>
+          <p>
+            Packaged applications are listed with their AppUserModelIDs and launched through the shell.
+          </p>
+        </article>
+
+        <article class="cell reveal">
+          <div class="swatch" aria-hidden="true"><span></span><span></span></div>
+          <h3>Light and dark</h3>
+          <p>
+            Follows the Windows setting by default, with an acrylic backdrop where Windows 11 provides one.
+          </p>
+        </article>
+
+        <article class="cell reveal">
+          <i class="ph ph-arrows-clockwise cell__icon" aria-hidden="true"></i>
+          <h3>Broken shortcuts heal</h3>
+          <p>
+            A moved application is searched for by file name and rebound, instead of leaving a dead icon behind.
+          </p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- How it works: sticky visual + rail -->
+  <section class="sec sec--alt" id="how">
+    <div class="wrap how">
+      <div class="how__vis">
+        <figure class="shot">
+          <img src="../screenshots/settings.png" width="1000" height="680"
+               alt="The TaskbarFold settings window"
+               data-slot="screenshots/settings.png" data-size="1280 x 860">
+        </figure>
+      </div>
+
+      <div class="how__rail">
+        <h2 class="h2">From install to a pinned group</h2>
+
+        <div class="step reveal">
+          <h3>Create a group</h3>
+          <p>
+            Give it a name, a colour and a column count. The group keeps a permanent id, so renaming it later never breaks the pin.
+          </p>
+        </div>
+
+        <div class="step reveal">
+          <h3>Add shortcuts</h3>
+          <p>
+            Drag them in from Explorer, pick a file, or double-click an entry in the list of installed applications.
+          </p>
+        </div>
+
+        <div class="step reveal">
+          <h3>Pin it</h3>
+          <p>
+            One button writes the shortcut and opens Explorer with it selected. Drag it onto the taskbar and the group is live.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Free: tinted full-bleed band -->
+  <section class="free" id="free">
+    <div class="wrap free__in">
+      <p class="eyebrow">Price</p>
+      <h2 class="display display--sm">Free, and staying free</h2>
+
+      <ul class="facts">
+        <li>No ads</li>
+        <li>No telemetry</li>
+        <li>No account</li>
+        <li>No paid tier</li>
+      </ul>
+
+      <p class="free__note">
+        The source is published under the MIT licence: read it, build it, change it, ship your own copy.
+      </p>
+      <p class="row">
+        <a class="btn btn--lg" href="https://github.com/stavtime/taskbarfold/releases/latest">
+          <i class="ph ph-download-simple" aria-hidden="true"></i>
+          <span>Download</span>
+        </a>
+        <a class="link" href="https://github.com/stavtime/taskbarfold/blob/main/LICENSE">Read the licence</a>
+      </p>
+    </div>
+  </section>
+
+  <!-- Comparison: paired rows -->
+  <section class="sec" id="compare">
+    <div class="wrap">
+      <h2 class="h2">What changed since taskbar-groups</h2>
+      <p class="sub">
+        The open-source project that solved this first was abandoned in January 2021, on a framework older than Windows 11. TaskbarFold is a fresh implementation of the same idea.
+      </p>
+
+      <div class="pairs">
+        <div class="pair reveal">
+          <p class="pair__old">A cold process start on every click</p>
+          <p class="pair__new">A tray resident with the window already built</p>
+        </div>
+        <div class="pair reveal">
+          <p class="pair__old">Sizes in raw pixels, no DPI awareness</p>
+          <p class="pair__new">Per-monitor v2, every size in DIP</p>
+        </div>
+        <div class="pair reveal">
+          <p class="pair__old">The monitor index was computed incorrectly</p>
+          <p class="pair__new">The taskbar edge is derived per monitor</p>
+        </div>
+        <div class="pair reveal">
+          <p class="pair__old">Config next to the .exe, needs elevation</p>
+          <p class="pair__new">Config in %APPDATA%, never elevated</p>
+        </div>
+        <div class="pair reveal">
+          <p class="pair__old">Renaming a group broke its pin</p>
+          <p class="pair__new">A group is identified by a permanent id</p>
+        </div>
+        <div class="pair reveal">
+          <p class="pair__old">No search inside a group</p>
+          <p class="pair__new">Type to filter, digits to launch</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ: accordion -->
+  <section class="sec sec--alt" id="faq">
+    <div class="wrap">
+      <h2 class="h2">Questions</h2>
+
+      <details class="qa">
+        <summary><span>Why is pinning not a single click?</span><i class="ph ph-caret-down" aria-hidden="true"></i></summary>
+        <p>
+          Windows 10 and 11 deliberately removed the API for pinning to the taskbar, and the registry workarounds break with feature updates. TaskbarFold prepares the shortcut correctly and hands it to you selected in Explorer. The last drag is yours.
+        </p>
+      </details>
+
+      <details class="qa">
+        <summary><span>Does it need administrator rights?</span><i class="ph ph-caret-down" aria-hidden="true"></i></summary>
+        <p>
+          No. The installer is per-user, the configuration lives in %APPDATA%, and the application never asks for elevation.
+        </p>
+      </details>
+
+      <details class="qa">
+        <summary><span>Does it work on Windows 10?</span><i class="ph ph-caret-down" aria-hidden="true"></i></summary>
+        <p>
+          Yes, from build 1809. The acrylic backdrop is a Windows 11 feature; on Windows 10 the panel uses a solid colour with opacity instead.
+        </p>
+      </details>
+
+      <details class="qa">
+        <summary><span>Do I need to install .NET?</span><i class="ph ph-caret-down" aria-hidden="true"></i></summary>
+        <p>
+          No. The portable build is a single self-contained executable with no runtime prerequisite.
+        </p>
+      </details>
+
+      <details class="qa">
+        <summary><span>Does it collect any data?</span><i class="ph ph-caret-down" aria-hidden="true"></i></summary>
+        <p>
+          No. The only network request is an update check against GitHub releases, made at most once a day and never on the UI path.
+        </p>
+      </details>
+    </div>
+  </section>
+
+  <!-- Download -->
+  <section class="cta" id="download">
+    <div class="wrap wrap--narrow cta__in">
+      <h2 class="h2">Download TaskbarFold</h2>
+      <p class="sub">A per-user installer or a portable zip. Both are free.</p>
+      <a class="btn btn--lg" href="https://github.com/stavtime/taskbarfold/releases/latest">
+        <i class="ph ph-download-simple" aria-hidden="true"></i>
+        <span>Download</span>
+      </a>
+      <p class="specs">
+        <span>0.1.0</span>
+        <span>Windows 10 (1809+) and Windows 11</span>
+        <span>x64</span>
+        <span>MIT licence</span>
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap foot__in">
+    <a class="brand" href="#top">
+      <svg class="brand__mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+        <rect x="1" y="1" width="30" height="30" rx="9" class="brand__plate"/>
+        <rect x="8"  y="8"  width="6.5" height="6.5" rx="2.2" class="brand__dot"/>
+        <rect x="17.5" y="8"  width="6.5" height="6.5" rx="2.2" class="brand__dot"/>
+        <rect x="8"  y="17.5" width="6.5" height="6.5" rx="2.2" class="brand__dot"/>
+        <rect x="17.5" y="17.5" width="6.5" height="6.5" rx="2.2" class="brand__dot brand__dot--lit"/>
+      </svg>
+      <span class="brand__name">TaskbarFold</span>
+    </a>
+    <nav class="foot__links" aria-label="Links">
+      <a href="../" hreflang="ru" lang="ru">Русский</a>
+      <a href="https://github.com/stavtime/taskbarfold">GitHub</a>
+      <a href="https://github.com/stavtime/taskbarfold/releases">Releases</a>
+      <a href="https://github.com/stavtime/taskbarfold/issues">Report a bug</a>
+      <a href="https://github.com/stavtime/taskbarfold/blob/main/LICENSE">MIT licence</a>
+    </nav>
+  </div>
+</footer>
+
+</body>
+</html>

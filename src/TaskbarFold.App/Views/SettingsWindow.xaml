@@ -1,0 +1,473 @@
+<Window x:Class="TaskbarFold.App.Views.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:TaskbarFold.App.ViewModels"
+        xmlns:conv="clr-namespace:TaskbarFold.App.Converters"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance vm:SettingsViewModel}"
+        Title="TaskbarFold"
+        Width="1000" Height="680"
+        MinWidth="820" MinHeight="560"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource SurfaceBrush}"
+        UseLayoutRounding="True"
+        TextOptions.TextFormattingMode="Ideal">
+
+    <Window.Resources>
+        <conv:BoolToVisibilityConverter x:Key="BoolToVisibility" />
+        <conv:StringToVisibilityConverter x:Key="StringToVisibility" />
+        <conv:NotNullToVisibilityConverter x:Key="NotNullToVisibility" />
+        <conv:ZeroToVisibilityConverter x:Key="ZeroToVisibility" />
+        <conv:InverseBoolConverter x:Key="InverseBool" />
+    </Window.Resources>
+
+    <Grid Margin="16">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="260" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="280" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- ============ Groups ============ -->
+        <DockPanel Grid.Column="0" Grid.Row="0" Margin="0,0,12,0">
+            <TextBlock DockPanel.Dock="Top" Text="Groups" Style="{StaticResource HeadingText}" />
+
+            <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,10,0,0">
+                <Button Content="New" Style="{StaticResource AccentButton}"
+                        Command="{Binding AddGroupCommand}" Margin="0,0,6,0" />
+                <Button Content="Duplicate" Style="{StaticResource QuietButton}"
+                        Command="{Binding DuplicateGroupCommand}" Margin="0,0,6,0" />
+                <Button Content="Delete" Style="{StaticResource QuietButton}"
+                        Command="{Binding DeleteGroupCommand}"
+                        Foreground="{DynamicResource DangerBrush}" />
+            </StackPanel>
+
+            <ListBox ItemsSource="{Binding Groups}"
+                     SelectedItem="{Binding SelectedGroup}"
+                     Background="{DynamicResource SurfaceAltBrush}"
+                     BorderBrush="{DynamicResource BorderBrush}"
+                     BorderThickness="1"
+                     Padding="4"
+                     HorizontalContentAlignment="Stretch">
+                <ListBox.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:GroupEditorViewModel}">
+                        <!-- Without this a screen reader announces the view-model type name. -->
+                        <Grid Margin="2,6" AutomationProperties.Name="{Binding Name}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Image Width="28" Height="28" Source="{Binding TileImage}"
+                                   RenderOptions.BitmapScalingMode="HighQuality" />
+                            <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Name}" Style="{StaticResource BodyText}" />
+                                <TextBlock Text="{Binding Summary}" Style="{StaticResource MutedText}" />
+                            </StackPanel>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </DockPanel>
+
+        <!-- ============ Selected group ============ -->
+        <ScrollViewer Grid.Column="1" Grid.Row="0" VerticalScrollBarVisibility="Auto"
+                      Visibility="{Binding SelectedGroup, Converter={StaticResource NotNullToVisibility}}">
+            <StackPanel Margin="0,0,12,0" DataContext="{Binding SelectedGroup}">
+
+                <TextBlock Text="Group" Style="{StaticResource HeadingText}" />
+
+                <TextBlock Text="NAME" Style="{StaticResource SectionText}" Margin="0,0,0,6" />
+                <!-- No Delay on this binding. A delayed write is still pending when the
+                     selection changes, and WPF then drops it — the rename silently
+                     vanishes. Persisting is debounced in the host instead. -->
+                <TextBox Style="{StaticResource FieldBox}"
+                         Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" />
+
+                <TextBlock Text="COLUMNS" Style="{StaticResource SectionText}" />
+                <StackPanel Orientation="Horizontal">
+                    <Slider Width="220" Minimum="2" Maximum="10" TickFrequency="1"
+                            IsSnapToTickEnabled="True"
+                            Value="{Binding Columns}" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding Columns}" Style="{StaticResource BodyText}"
+                               Margin="10,0,0,0" VerticalAlignment="Center" />
+                </StackPanel>
+
+                <TextBlock Text="BACKGROUND" Style="{StaticResource SectionText}" />
+                <StackPanel Orientation="Horizontal">
+                    <ItemsControl ItemsSource="{Binding DataContext.ColorChoices,
+                                               RelativeSource={RelativeSource AncestorType=Window}}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Width="26" Height="26" Margin="0,0,6,0"
+                                        Style="{StaticResource QuietButton}"
+                                        Padding="0"
+                                        Background="{Binding}"
+                                        Click="OnColorPicked"
+                                        Tag="{Binding}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBox Style="{StaticResource FieldBox}" Width="100" Margin="6,0,0,0"
+                             Text="{Binding Background, UpdateSourceTrigger=LostFocus}" />
+                </StackPanel>
+
+                <TextBlock Text="OPACITY" Style="{StaticResource SectionText}" />
+                <Slider Width="220" HorizontalAlignment="Left"
+                        Minimum="0.3" Maximum="1.0" TickFrequency="0.05"
+                        IsSnapToTickEnabled="True" Value="{Binding Opacity}" />
+
+                <TextBlock Text="ICON" Style="{StaticResource SectionText}" />
+                <StackPanel Orientation="Horizontal">
+                    <!-- The tile is rendered by the same code that writes the .ico, so this
+                         is literally what lands on the taskbar. WPF cannot draw colour
+                         emoji itself, which rules out reproducing it with a TextBlock. -->
+                    <Border Width="64" Height="64" CornerRadius="8" Margin="0,0,12,0"
+                            Background="{DynamicResource SurfaceAltBrush}">
+                        <Image Source="{Binding TileImage}" Width="56" Height="56"
+                               RenderOptions.BitmapScalingMode="HighQuality" />
+                    </Border>
+
+                    <StackPanel VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBox x:Name="EmojiBox" Style="{StaticResource FieldBox}"
+                                     Width="64" FontSize="18"
+                                     Text="{Binding Emoji, UpdateSourceTrigger=PropertyChanged}"
+                                     ToolTip="Type or paste an emoji. Press Win+. to open the emoji panel." />
+                            <Button Content="Choose image…" Style="{StaticResource QuietButton}"
+                                    Click="OnChooseGroupIcon" Margin="6,0,0,0" />
+                            <Button Content="Reset" Style="{StaticResource QuietButton}"
+                                    Click="OnClearGroupIcon" Margin="6,0,0,0" />
+                        </StackPanel>
+                        <TextBlock Text="Press Win+. for the Windows emoji panel"
+                                   Style="{StaticResource MutedText}" Margin="0,6,0,0" />
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Quick picks, so the common case needs no typing at all. -->
+                <ItemsControl ItemsSource="{Binding DataContext.EmojiSuggestions,
+                                           RelativeSource={RelativeSource AncestorType=Window}}"
+                              Margin="0,8,0,0">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel MaxWidth="380" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Button Width="34" Height="34" Margin="0,0,4,4" Padding="0"
+                                    Style="{StaticResource QuietButton}"
+                                    Click="OnEmojiPicked"
+                                    Tag="{Binding Emoji}"
+                                    ToolTip="{Binding Name}">
+                                <Image Source="{Binding Image}" Width="22" Height="22"
+                                       RenderOptions.BitmapScalingMode="HighQuality" />
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- Live preview: bound to the same properties the flyout uses, so colour,
+                     opacity, column count and icon size are visible before pinning. -->
+                <TextBlock Text="PREVIEW" Style="{StaticResource SectionText}" />
+                <Border Background="{Binding BackgroundBrush}"
+                        CornerRadius="12"
+                        Padding="8"
+                        HorizontalAlignment="Left"
+                        BorderBrush="{DynamicResource BorderSubtleBrush}"
+                        BorderThickness="1">
+                    <StackPanel>
+                        <ItemsControl ItemsSource="{Binding Shortcuts}" MinWidth="140">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="{Binding Columns}" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:ShortcutItemViewModel}">
+                                    <StackPanel Margin="3" Width="76">
+                                        <Image Source="{Binding Icon}"
+                                               Width="{Binding DataContext.IconSize,
+                                                       RelativeSource={RelativeSource AncestorType=Window}}"
+                                               Height="{Binding DataContext.IconSize,
+                                                        RelativeSource={RelativeSource AncestorType=Window}}"
+                                               Stretch="Uniform"
+                                               RenderOptions.BitmapScalingMode="HighQuality" />
+                                        <TextBlock Text="{Binding DisplayName}"
+                                                   Margin="0,6,0,0"
+                                                   TextAlignment="Center"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   TextWrapping="NoWrap"
+                                                   FontFamily="Segoe UI"
+                                                   FontSize="11"
+                                                   Foreground="White"
+                                                   Visibility="{Binding DataContext.ShowLabels,
+                                                                RelativeSource={RelativeSource AncestorType=Window},
+                                                                Converter={StaticResource BoolToVisibility}}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <TextBlock Text="Add a shortcut to see the preview"
+                                   Style="{StaticResource MutedText}"
+                                   Foreground="White"
+                                   Margin="8"
+                                   Visibility="{Binding Shortcuts.Count,
+                                                Converter={StaticResource ZeroToVisibility}}" />
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Text="GLOBAL HOTKEY" Style="{StaticResource SectionText}" />
+                <StackPanel Orientation="Horizontal">
+                    <TextBox x:Name="HotkeyBox" Style="{StaticResource FieldBox}" Width="180"
+                             IsReadOnly="True" Text="{Binding HotkeyDisplay, Mode=OneWay}"
+                             PreviewKeyDown="OnHotkeyKeyDown"
+                             ToolTip="Click here and press the combination you want." />
+                    <Button Content="Clear" Style="{StaticResource QuietButton}" Margin="6,0,0,0"
+                            Click="OnClearHotkey" />
+                </StackPanel>
+
+                <!-- ============ Shortcuts ============ -->
+                <TextBlock Text="Shortcuts" Style="{StaticResource HeadingText}" Margin="0,22,0,8" />
+
+                <Border Background="{DynamicResource SurfaceAltBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="4"
+                        AllowDrop="True"
+                        Drop="OnShortcutsDrop"
+                        DragOver="OnShortcutsDragOver">
+                    <StackPanel>
+                        <ListBox x:Name="ShortcutList"
+                                 MinHeight="150" MaxHeight="280"
+                                 ItemsSource="{Binding Shortcuts}"
+                                 SelectedItem="{Binding DataContext.SelectedShortcut,
+                                                RelativeSource={RelativeSource AncestorType=Window}}"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 HorizontalContentAlignment="Stretch"
+                                 PreviewMouseLeftButtonDown="OnShortcutMouseDown"
+                                 PreviewMouseMove="OnShortcutMouseMove"
+                                 Drop="OnShortcutReorderDrop"
+                                 DragOver="OnShortcutsDragOver"
+                                 AllowDrop="True">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate DataType="{x:Type vm:ShortcutItemViewModel}">
+                                    <Grid Margin="2,4" AutomationProperties.Name="{Binding DisplayName}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding Ordinal}" Style="{StaticResource MutedText}"
+                                                   Width="20" VerticalAlignment="Center" />
+                                        <Image Grid.Column="1" Source="{Binding Icon}"
+                                               Width="24" Height="24"
+                                               RenderOptions.BitmapScalingMode="HighQuality" />
+                                        <StackPanel Grid.Column="2" Margin="10,0,0,0" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding DisplayName}" Style="{StaticResource BodyText}" />
+                                            <TextBlock Text="{Binding StatusMessage}"
+                                                       Style="{StaticResource MutedText}"
+                                                       Foreground="{DynamicResource DangerBrush}"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       Visibility="{Binding IsBroken,
+                                                                    Converter={StaticResource BoolToVisibility}}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <TextBlock Text="Drag files here from Explorer, or use the buttons below."
+                                   Style="{StaticResource MutedText}"
+                                   Margin="6,8,6,4" />
+                    </StackPanel>
+                </Border>
+
+                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                    <Button Content="Add file…" Style="{StaticResource QuietButton}"
+                            Click="OnAddFile" Margin="0,0,6,0" />
+                    <Button Content="Move up" Style="{StaticResource QuietButton}"
+                            Command="{Binding DataContext.MoveShortcutUpCommand,
+                                      RelativeSource={RelativeSource AncestorType=Window}}"
+                            Margin="0,0,6,0" />
+                    <Button Content="Move down" Style="{StaticResource QuietButton}"
+                            Command="{Binding DataContext.MoveShortcutDownCommand,
+                                      RelativeSource={RelativeSource AncestorType=Window}}"
+                            Margin="0,0,6,0" />
+                    <Button Content="Remove" Style="{StaticResource QuietButton}"
+                            Foreground="{DynamicResource DangerBrush}"
+                            Command="{Binding DataContext.RemoveShortcutCommand,
+                                      RelativeSource={RelativeSource AncestorType=Window}}" />
+                </StackPanel>
+
+                <!-- Per-shortcut detail -->
+                <Border Margin="0,14,0,0" Padding="12" CornerRadius="8"
+                        Background="{DynamicResource SurfaceAltBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        DataContext="{Binding DataContext.SelectedShortcut,
+                                      RelativeSource={RelativeSource AncestorType=Window}}"
+                        Visibility="{Binding Converter={StaticResource NotNullToVisibility}}">
+                    <StackPanel>
+                        <TextBlock Text="SELECTED SHORTCUT" Style="{StaticResource SectionText}" Margin="0,0,0,8" />
+
+                        <TextBlock Text="Display name" Style="{StaticResource MutedText}" />
+                        <TextBox Style="{StaticResource FieldBox}" Margin="0,2,0,8"
+                                 Text="{Binding Model.DisplayName, UpdateSourceTrigger=LostFocus}"
+                                 LostFocus="OnShortcutFieldChanged" />
+
+                        <TextBlock Text="Target" Style="{StaticResource MutedText}" />
+                        <TextBox Style="{StaticResource FieldBox}" Margin="0,2,0,8"
+                                 Text="{Binding Model.Target, UpdateSourceTrigger=LostFocus}"
+                                 LostFocus="OnShortcutFieldChanged" />
+
+                        <TextBlock Text="Arguments" Style="{StaticResource MutedText}" />
+                        <TextBox Style="{StaticResource FieldBox}" Margin="0,2,0,8"
+                                 Text="{Binding Model.Arguments, UpdateSourceTrigger=LostFocus}"
+                                 LostFocus="OnShortcutFieldChanged" />
+
+                        <TextBlock Text="Working folder" Style="{StaticResource MutedText}" />
+                        <TextBox Style="{StaticResource FieldBox}" Margin="0,2,0,8"
+                                 Text="{Binding Model.WorkingDirectory, UpdateSourceTrigger=LostFocus}"
+                                 LostFocus="OnShortcutFieldChanged" />
+
+                        <CheckBox Content="Run as administrator" Style="{StaticResource SettingCheck}"
+                                  IsChecked="{Binding Model.RunAsAdmin}"
+                                  Click="OnShortcutFieldChanged" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- ============ Right rail ============ -->
+        <ScrollViewer Grid.Column="2" Grid.Row="0" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <TextBlock Text="Pin to the taskbar" Style="{StaticResource HeadingText}" />
+
+                <TextBlock Style="{StaticResource MutedText}" TextWrapping="Wrap"
+                           Text="Windows does not let an application pin itself. TaskbarFold prepares the shortcut and opens Explorer with it selected — drag it to the taskbar or right-click it and choose Pin to taskbar." />
+
+                <Button Content="Prepare shortcut" Style="{StaticResource AccentButton}"
+                        Margin="0,10,0,0" HorizontalAlignment="Left"
+                        Command="{Binding PinSelectedGroupCommand}" />
+
+                <TextBlock Text="{Binding PinHint}" Style="{StaticResource MutedText}"
+                           TextWrapping="Wrap" Margin="0,8,0,0"
+                           Visibility="{Binding PinHint, Converter={StaticResource StringToVisibility}}" />
+
+                <!-- Installed applications, including Store apps -->
+                <TextBlock Text="Installed applications" Style="{StaticResource HeadingText}" Margin="0,24,0,8" />
+
+                <TextBox Style="{StaticResource FieldBox}"
+                         Text="{Binding AppSearchText, UpdateSourceTrigger=PropertyChanged, Delay=200}"
+                         ToolTip="Search installed applications" />
+
+                <TextBlock Text="Reading the list of installed applications…"
+                           Style="{StaticResource MutedText}" Margin="0,8,0,0"
+                           Visibility="{Binding IsLoadingApps, Converter={StaticResource BoolToVisibility}}" />
+
+                <ListBox ItemsSource="{Binding AvailableApps}"
+                         Height="240" Margin="0,8,0,0"
+                         Background="{DynamicResource SurfaceAltBrush}"
+                         BorderBrush="{DynamicResource BorderBrush}"
+                         BorderThickness="1"
+                         MouseDoubleClick="OnInstalledAppActivated"
+                         HorizontalContentAlignment="Stretch">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="2,4">
+                                <TextBlock Text="{Binding DisplayName}" Style="{StaticResource BodyText}"
+                                           TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="Store app" Style="{StaticResource MutedText}"
+                                           Visibility="{Binding IsPackaged,
+                                                        Converter={StaticResource BoolToVisibility}}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <TextBlock Text="Double-click to add to the selected group."
+                           Style="{StaticResource MutedText}" Margin="0,6,0,0" />
+
+                <!-- Preferences -->
+                <TextBlock Text="Preferences" Style="{StaticResource HeadingText}" Margin="0,24,0,8" />
+
+                <TextBlock Text="Theme" Style="{StaticResource MutedText}" />
+                <ComboBox ItemsSource="{Binding ThemeChoices}" SelectedItem="{Binding Theme}"
+                          Margin="0,4,0,10" />
+
+                <TextBlock Text="Icon size" Style="{StaticResource MutedText}" />
+                <StackPanel Orientation="Horizontal" Margin="0,4,0,6">
+                    <Slider Width="150" Minimum="24" Maximum="96" TickFrequency="8"
+                            IsSnapToTickEnabled="True" Value="{Binding IconSize}"
+                            VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding IconSize}" Style="{StaticResource BodyText}"
+                               Margin="10,0,0,0" VerticalAlignment="Center" />
+                </StackPanel>
+
+                <CheckBox Content="Show names under icons" Style="{StaticResource SettingCheck}"
+                          IsChecked="{Binding ShowLabels}" />
+                <CheckBox Content="Close the flyout after launching" Style="{StaticResource SettingCheck}"
+                          IsChecked="{Binding CloseOnLaunch}" />
+                <CheckBox Content="Type to search inside a group" Style="{StaticResource SettingCheck}"
+                          IsChecked="{Binding TypeToSearch}" />
+                <CheckBox Content="Start with Windows" Style="{StaticResource SettingCheck}"
+                          IsChecked="{Binding RunAtStartup}" />
+                <CheckBox Content="Check for updates" Style="{StaticResource SettingCheck}"
+                          IsChecked="{Binding CheckForUpdates}"
+                          IsEnabled="{Binding UpdatesManagedByPolicy,
+                                      Converter={StaticResource InverseBool}}" />
+
+                <TextBlock Text="Update checking is managed by your administrator."
+                           Style="{StaticResource MutedText}"
+                           TextWrapping="Wrap"
+                           Visibility="{Binding UpdatesManagedByPolicy,
+                                        Converter={StaticResource BoolToVisibility}}" />
+
+                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                    <TextBlock Text="{Binding CurrentVersionText}"
+                               Style="{StaticResource MutedText}"
+                               VerticalAlignment="Center" Margin="0,0,10,0" />
+                    <Button Content="Check now" Style="{StaticResource QuietButton}"
+                            Command="{Binding CheckForUpdatesNowCommand}"
+                            IsEnabled="{Binding IsCheckingForUpdates,
+                                        Converter={StaticResource InverseBool}}" />
+                </StackPanel>
+
+                <TextBlock Text="{Binding UpdateStatusText}"
+                           Style="{StaticResource MutedText}"
+                           TextWrapping="Wrap" Margin="0,6,0,0"
+                           Visibility="{Binding UpdateStatusText,
+                                        Converter={StaticResource StringToVisibility}}" />
+
+                <Button Content="Open the download page"
+                        Style="{StaticResource AccentButton}"
+                        HorizontalAlignment="Left" Margin="0,6,0,0"
+                        Command="{Binding OpenUpdatePageCommand}"
+                        Visibility="{Binding UpdateUrl,
+                                     Converter={StaticResource StringToVisibility}}" />
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- ============ Status bar ============ -->
+        <Border Grid.Row="1" Grid.ColumnSpan="3" Margin="0,12,0,0" Padding="10,6"
+                CornerRadius="6"
+                Background="{DynamicResource SurfaceAltBrush}"
+                Visibility="{Binding StatusMessage, Converter={StaticResource StringToVisibility}}">
+            <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource MutedText}" />
+        </Border>
+    </Grid>
+</Window>

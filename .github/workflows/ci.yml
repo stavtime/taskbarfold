@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    # WPF and the Win32 interop under test only build and run on Windows.
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore TaskbarFold.sln
+
+      - name: Build
+        run: dotnet build TaskbarFold.sln -c Release --no-restore
+
+      - name: Test
+        run: dotnet test tests/TaskbarFold.Tests/TaskbarFold.Tests.csproj -c Release --no-build --logger "trx;LogFileName=test-results.trx"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: '**/TestResults/*.trx'
+
+      - name: Publish single file
+        run: >
+          dotnet publish src/TaskbarFold.App/TaskbarFold.App.csproj
+          -c Release -r win-x64 --self-contained true
+          -p:PublishSingleFile=true
+          -o artifacts/publish
+
+      - name: Package portable zip
+        run: Compress-Archive -Path artifacts/publish/TaskbarFold.exe -DestinationPath artifacts/TaskbarFold-portable-win-x64.zip
+        shell: pwsh
+
+      - name: Build installer
+        run: |
+          & "$env:ProgramFiles(x86)\Inno Setup 6\ISCC.exe" installer/TaskbarFold.iss
+        shell: pwsh
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: TaskbarFold-win-x64
+          path: |
+            artifacts/TaskbarFold-portable-win-x64.zip
+            artifacts/installer/*.exe
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/TaskbarFold-portable-win-x64.zip
+            artifacts/installer/*.exe
+          generate_release_notes: true

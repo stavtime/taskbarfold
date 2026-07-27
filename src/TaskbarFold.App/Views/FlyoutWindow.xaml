@@ -1,0 +1,203 @@
+<Window x:Class="TaskbarFold.App.Views.FlyoutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:TaskbarFold.App.ViewModels"
+        xmlns:conv="clr-namespace:TaskbarFold.App.Converters"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance vm:FlyoutViewModel}"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Topmost="True"
+        SizeToContent="WidthAndHeight"
+        Background="Transparent"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True">
+
+    <Window.Resources>
+        <conv:BoolToVisibilityConverter x:Key="BoolToVisibility" />
+        <conv:NullToVisibilityConverter x:Key="NullToVisibility" />
+        <conv:StringToVisibilityConverter x:Key="StringToVisibility" />
+
+        <!-- One tile: icon, optional label, quick-launch number, broken-state badge. -->
+        <DataTemplate x:Key="ShortcutTile" DataType="{x:Type vm:ShortcutItemViewModel}">
+            <Border x:Name="Tile"
+                    Margin="3"
+                    Padding="6,8"
+                    CornerRadius="8"
+                    Background="Transparent"
+                    Cursor="Hand"
+                    ToolTip="{Binding Tooltip}"
+                    Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}"
+                    MouseLeftButtonDown="OnTileMouseDown"
+                    MouseLeftButtonUp="OnTileClicked"
+                    MouseMove="OnTileMouseMove"
+                    AllowDrop="True"
+                    Drop="OnTileDrop"
+                    DragOver="OnTileDragOver">
+                <Border.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="Open"
+                                  Command="{Binding PlacementTarget.Tag.LaunchCommand,
+                                                    RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                  CommandParameter="{Binding}" />
+                        <MenuItem Header="Run as administrator"
+                                  Command="{Binding PlacementTarget.Tag.RunAsAdminCommand,
+                                                    RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                  CommandParameter="{Binding}" />
+                        <Separator />
+                        <MenuItem Header="Open file location"
+                                  Command="{Binding PlacementTarget.Tag.OpenFileLocationCommand,
+                                                    RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                  CommandParameter="{Binding}" />
+                        <MenuItem Header="Properties"
+                                  Command="{Binding PlacementTarget.Tag.ShowPropertiesCommand,
+                                                    RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                  CommandParameter="{Binding}" />
+                        <MenuItem Header="Find it again"
+                                  Command="{Binding PlacementTarget.Tag.RebindCommand,
+                                                    RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                  CommandParameter="{Binding}"
+                                  Visibility="{Binding IsBroken, Converter={StaticResource BoolToVisibility}}" />
+                        <Separator />
+                        <MenuItem Header="Remove from group"
+                                  Command="{Binding PlacementTarget.Tag.RemoveFromGroupCommand,
+                                                    RelativeSource={RelativeSource AncestorType=ContextMenu}}"
+                                  CommandParameter="{Binding}" />
+                    </ContextMenu>
+                </Border.ContextMenu>
+
+                <StackPanel HorizontalAlignment="Center">
+                    <Grid Width="{Binding DataContext.IconSize, RelativeSource={RelativeSource AncestorType=Window}}"
+                          Height="{Binding DataContext.IconSize, RelativeSource={RelativeSource AncestorType=Window}}">
+                        <Image Source="{Binding Icon}"
+                               Stretch="Uniform"
+                               RenderOptions.BitmapScalingMode="HighQuality" />
+
+                        <!-- Stand-in for a shortcut whose icon could not be rendered. -->
+                        <Border CornerRadius="6"
+                                Background="{DynamicResource SurfaceRaisedBrush}"
+                                BorderBrush="{DynamicResource BorderBrush}"
+                                BorderThickness="1"
+                                Visibility="{Binding Icon, Converter={StaticResource NullToVisibility}}">
+                            <TextBlock Text="?"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       FontSize="16"
+                                       Foreground="{DynamicResource TextMutedBrush}" />
+                        </Border>
+
+                        <Border Visibility="{Binding IsBroken, Converter={StaticResource BoolToVisibility}}"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Bottom"
+                                Width="14" Height="14"
+                                CornerRadius="7"
+                                Background="{DynamicResource DangerBrush}">
+                            <TextBlock Text="!"
+                                       FontSize="10"
+                                       FontWeight="Bold"
+                                       Foreground="White"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" />
+                        </Border>
+
+                        <Border Visibility="{Binding HasQuickLaunchNumber, Converter={StaticResource BoolToVisibility}}"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Top"
+                                MinWidth="14" Height="14"
+                                Padding="3,0"
+                                CornerRadius="4"
+                                Opacity="0.75"
+                                Background="{DynamicResource SurfaceAltBrush}">
+                            <TextBlock Text="{Binding Ordinal}"
+                                       FontSize="9"
+                                       Foreground="{DynamicResource TextMutedBrush}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" />
+                        </Border>
+                    </Grid>
+
+                    <TextBlock Text="{Binding DisplayName}"
+                               Margin="0,6,0,0"
+                               MaxWidth="76"
+                               TextAlignment="Center"
+                               TextTrimming="CharacterEllipsis"
+                               TextWrapping="NoWrap"
+                               FontFamily="Segoe UI"
+                               FontSize="11"
+                               Foreground="{DynamicResource TextBrush}"
+                               Visibility="{Binding DataContext.ShowLabels,
+                                                    RelativeSource={RelativeSource AncestorType=Window},
+                                                    Converter={StaticResource BoolToVisibility}}" />
+                </StackPanel>
+            </Border>
+
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                    <Setter TargetName="Tile" Property="Background" Value="{DynamicResource SelectionBrush}" />
+                </DataTrigger>
+                <Trigger SourceName="Tile" Property="IsMouseOver" Value="True">
+                    <Setter TargetName="Tile" Property="Background" Value="{DynamicResource HoverBrush}" />
+                </Trigger>
+                <DataTrigger Binding="{Binding IsBroken}" Value="True">
+                    <Setter TargetName="Tile" Property="Opacity" Value="0.55" />
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+    </Window.Resources>
+
+    <!-- RenderTransform drives the open animation; the border carries the visible chrome. -->
+    <Border x:Name="Root"
+            CornerRadius="12"
+            Padding="8"
+            Background="{Binding Background}"
+            BorderBrush="{DynamicResource BorderSubtleBrush}"
+            BorderThickness="1"
+            RenderTransformOrigin="0.5,0.5">
+        <Border.RenderTransform>
+            <TranslateTransform x:Name="SlideTransform" />
+        </Border.RenderTransform>
+
+        <StackPanel MinWidth="180">
+
+            <!-- Search box, revealed by typing rather than always taking up room. -->
+            <TextBox x:Name="SearchBox"
+                     Style="{StaticResource FieldBox}"
+                     Margin="3,3,3,6"
+                     Visibility="Collapsed"
+                     Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" />
+
+            <ItemsControl x:Name="Tiles"
+                          ItemsSource="{Binding VisibleItems}"
+                          ItemTemplate="{StaticResource ShortcutTile}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Columns="{Binding Columns}" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+            </ItemsControl>
+
+            <TextBlock Text="This group is empty. Add shortcuts in settings."
+                       Style="{StaticResource MutedText}"
+                       Margin="8"
+                       TextWrapping="Wrap"
+                       MaxWidth="200"
+                       Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVisibility}}" />
+
+            <!-- Failures are explained in place instead of in a modal dialog. -->
+            <Border Margin="3,6,3,0"
+                    Padding="8,6"
+                    CornerRadius="6"
+                    Background="{DynamicResource SurfaceAltBrush}"
+                    Visibility="{Binding ErrorMessage, Converter={StaticResource StringToVisibility}}">
+                <TextBlock Text="{Binding ErrorMessage}"
+                           Style="{StaticResource MutedText}"
+                           Foreground="{DynamicResource DangerBrush}"
+                           TextWrapping="Wrap"
+                           MaxWidth="240" />
+            </Border>
+        </StackPanel>
+    </Border>
+</Window>
