@@ -1,0 +1,139 @@
+name: Publish update feed
+
+# Writes latest.json to the site. This is what actually notifies users: the application
+# polls that file once a day, so nothing reaches anybody until this runs.
+#
+# Two triggers on purpose:
+#   * a published release announces itself automatically;
+#   * the manual run can announce any version — including an older one, which retracts an
+#     announcement if a release turns out to be bad. Rolling back is one dispatch, and
+#     that ability is the main reason the feed is a file we own rather than the GitHub API.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to announce, e.g. 0.2.0 (an older number retracts a newer announcement)'
+        required: true
+      notes:
+        description: 'One line shown in the notification (optional)'
+        required: false
+      url:
+        description: 'Override the download page (optional; defaults to the release page)'
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Build latest.json
+        id: feed
+        env:
+          EVENT: ${{ github.event_name }}
+          TAG: ${{ github.event.release.tag_name }}
+          IN_VERSION: ${{ github.event.inputs.version }}
+          IN_NOTES: ${{ github.event.inputs.notes }}
+          IN_URL: ${{ github.event.inputs.url }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          if [ "$EVENT" = "release" ]; then
+            VERSION="${TAG#v}"
+            NOTES=""
+          else
+            VERSION="${IN_VERSION#v}"
+            NOTES="$IN_NOTES"
+          fi
+
+          # The app compares numeric versions and treats anything it cannot parse as
+          # "no update". Catch a malformed number here rather than shipping a feed that
+          # silently tells every installation nothing is available.
+          if ! printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::'$VERSION' is not MAJOR.MINOR.PATCH"
+            exit 1
+          fi
+
+          URL="${IN_URL:-https://github.com/$REPO/releases/tag/v$VERSION}"
+
+          # jq builds the JSON so that quotes or backslashes in the note cannot produce a
+          # broken file — which would leave every client unable to check for updates.
+          jq -n --arg version "$VERSION" --arg url "$URL" --arg notes "$NOTES" \
+            '{version: $version, url: $url, notes: $notes}' > latest.json
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          cat latest.json
+
+      - name: Copy to the site
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+
+          for name in DEPLOY_HOST DEPLOY_USER DEPLOY_PATH DEPLOY_KEY; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Secret $name is not set"
+              exit 1
+            fi
+          done
+
+          PORT="${DEPLOY_PORT:-22}"
+
+          mkdir -p ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+
+          if [ -n "$DEPLOY_KNOWN_HOSTS" ]; then
+            printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          else
+            # Trust on first use. Set DEPLOY_KNOWN_HOSTS to pin the host key instead;
+            # without it a hijacked DNS answer could be handed the deploy key.
+            echo "::warning::DEPLOY_KNOWN_HOSTS is not set; falling back to ssh-keyscan"
+            ssh-keyscan -p "$PORT" -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          fi
+          chmod 600 ~/.ssh/known_hosts
+
+          # Upload beside the target and move into place, so a client polling at that
+          # moment never reads a half-written file.
+          scp -i ~/.ssh/id_deploy -P "$PORT" latest.json \
+            "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/latest.json.tmp"
+
+          ssh -i ~/.ssh/id_deploy -p "$PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
+            "mv -f '$DEPLOY_PATH/latest.json.tmp' '$DEPLOY_PATH/latest.json' && chmod 644 '$DEPLOY_PATH/latest.json'"
+
+          rm -f ~/.ssh/id_deploy
+
+      - name: Confirm what users will receive
+        env:
+          FEED_URL: ${{ vars.FEED_URL || 'https://taskbarfold.duckapps.ru/latest.json' }}
+          EXPECTED: ${{ steps.feed.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          # Read it back over the public URL. A deploy that landed in the wrong directory,
+          # or a cache sitting in front of the site, is otherwise invisible until users
+          # complain that an announced release never reached them.
+          for attempt in 1 2 3 4 5; do
+            SERVED=$(curl -fsSL --max-time 20 -H 'Cache-Control: no-cache' "$FEED_URL" | jq -r '.version' || echo '')
+            echo "attempt $attempt: served='$SERVED' expected='$EXPECTED'"
+            [ "$SERVED" = "$EXPECTED" ] && break
+            sleep 10
+          done
+
+          if [ "$SERVED" != "$EXPECTED" ]; then
+            echo "::error::$FEED_URL still reports '$SERVED'. Users would not see the announcement."
+            exit 1
+          fi
+
+          echo "Announced $EXPECTED. Installations will pick it up within 24 hours."

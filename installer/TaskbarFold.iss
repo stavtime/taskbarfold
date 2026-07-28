@@ -5,7 +5,12 @@
 ; them for a taskbar utility is the kind of thing that stops people installing it.
 
 #define AppName "TaskbarFold"
-#define AppVersion "0.1.0"
+
+; Overridden by CI with the git tag: ISCC /DAppVersion=0.2.0
+; The literal below is only the fallback for a local build.
+#ifndef AppVersion
+  #define AppVersion "0.1.0"
+#endif
 #define AppPublisher "TaskbarFold contributors"
 #define AppUrl "https://github.com/stavtime/taskbarfold"
 #define AppExe "TaskbarFold.exe"

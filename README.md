@@ -153,6 +153,40 @@ format can grow without breaking copies already installed. Only an absolute `htt
 link is ever opened, whatever the feed says. A version that cannot be parsed is treated
 as "no update", never as one.
 
+### Publishing a release
+
+The version comes from the git tag. Nothing else needs editing — CI passes it to the
+build and to the installer, and fails if the binary it produced disagrees with the tag.
+A build carrying the wrong number would report an update to itself for ever.
+
+```bash
+git tag v0.2.0 && git push origin v0.2.0
+```
+
+That builds the artifacts and creates the GitHub release. Publishing the release then
+triggers `publish-feed`, which writes `latest.json` to the site over SSH and reads it
+back over the public URL to confirm users will actually receive it.
+
+**Announcing is a separate act from releasing.** Until `latest.json` changes, nobody is
+told anything — which is what makes it possible to publish a release quietly, add the
+announcement later, and retract it if the release turns out to be bad. To retract, run
+the **Publish update feed** workflow manually with the previous version number: existing
+installations go back to seeing themselves as current.
+
+The manual run also takes an optional one-line note, which appears in the notification.
+
+Required repository secrets:
+
+| Secret | Purpose |
+|---|---|
+| `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_PATH` | Where to copy `latest.json` |
+| `DEPLOY_KEY` | Private key for that account |
+| `DEPLOY_PORT` | Optional, defaults to 22 |
+| `DEPLOY_KNOWN_HOSTS` | Optional but recommended — pins the host key instead of trusting it on first use |
+
+Set the repository variable `FEED_URL` if the public address ever differs from the
+default.
+
 ### Managed deployments
 
 Where an organisation rolls out versions itself, telling users about a release they

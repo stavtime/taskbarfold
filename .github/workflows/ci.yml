@@ -24,11 +24,36 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
+      # The tag is the single source of truth for the version. Without this the build
+      # would carry whatever Directory.Build.props happens to say, and a release tagged
+      # v0.2.0 could ship a binary that believes it is 0.1.0 — which would then report an
+      # update to itself, for ever.
+      - name: Resolve version from tag
+        id: ver
+        shell: pwsh
+        run: |
+          $ref = "${{ github.ref }}"
+          if ($ref -like 'refs/tags/v*') {
+            $v = $ref.Substring('refs/tags/v'.Length)
+            if ($v -notmatch '^\d+\.\d+\.\d+$') {
+              throw "Tag '$v' is not MAJOR.MINOR.PATCH; the update feed compares numeric versions."
+            }
+            "version=$v"                                                      >> $env:GITHUB_OUTPUT
+            # Separate arguments, not -p:A=1;B=2 — a semicolon would split the command
+            # in PowerShell, which is the default shell on the Windows runner.
+            "msbuild=-p:Version=$v -p:AssemblyVersion=$v.0 -p:FileVersion=$v.0" >> $env:GITHUB_OUTPUT
+            Write-Host "Building version $v"
+          } else {
+            # Untagged build: keep the fallback from Directory.Build.props.
+            "version="  >> $env:GITHUB_OUTPUT
+            "msbuild="  >> $env:GITHUB_OUTPUT
+          }
+
       - name: Restore
         run: dotnet restore TaskbarFold.sln
 
       - name: Build
-        run: dotnet build TaskbarFold.sln -c Release --no-restore
+        run: dotnet build TaskbarFold.sln -c Release --no-restore ${{ steps.ver.outputs.msbuild }}
 
       - name: Test
         run: dotnet test tests/TaskbarFold.Tests/TaskbarFold.Tests.csproj -c Release --no-build --logger "trx;LogFileName=test-results.trx"
@@ -45,16 +70,35 @@ jobs:
           dotnet publish src/TaskbarFold.App/TaskbarFold.App.csproj
           -c Release -r win-x64 --self-contained true
           -p:PublishSingleFile=true
+          ${{ steps.ver.outputs.msbuild }}
           -o artifacts/publish
+
+      - name: Verify the built version matches the tag
+        if: steps.ver.outputs.version != ''
+        shell: pwsh
+        run: |
+          $expected = "${{ steps.ver.outputs.version }}"
+          $actual = (Get-Item artifacts/publish/TaskbarFold.exe).VersionInfo.FileVersion
+          Write-Host "tag=$expected  binary=$actual"
+          if (-not $actual.StartsWith($expected)) {
+            throw "The binary reports $actual but the tag says $expected."
+          }
 
       - name: Package portable zip
         run: Compress-Archive -Path artifacts/publish/TaskbarFold.exe -DestinationPath artifacts/TaskbarFold-portable-win-x64.zip
         shell: pwsh
 
       - name: Build installer
-        run: |
-          & "$env:ProgramFiles(x86)\Inno Setup 6\ISCC.exe" installer/TaskbarFold.iss
         shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          $version = "${{ steps.ver.outputs.version }}"
+          if ($version) {
+            & $iscc "/DAppVersion=$version" installer/TaskbarFold.iss
+          } else {
+            & $iscc installer/TaskbarFold.iss
+          }
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup failed with $LASTEXITCODE" }
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
