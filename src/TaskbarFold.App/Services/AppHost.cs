@@ -102,6 +102,7 @@ public sealed class AppHost : IDisposable
         _pipeServer.Start();
 
         CreateTrayIcon();
+        RegisterHotkeys();
 
         if (showSettings)
         {

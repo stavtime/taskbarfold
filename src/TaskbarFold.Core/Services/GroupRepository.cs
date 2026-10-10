@@ -14,6 +14,7 @@ public sealed class GroupRepository : IGroupRepository
 {
     private readonly AppPaths _paths;
     private readonly object _gate = new();
+    private bool _isReadOnly;
 
     public GroupRepository(AppPaths? paths = null) => _paths = paths ?? AppPaths.Default;
 
@@ -31,6 +32,7 @@ public sealed class GroupRepository : IGroupRepository
         {
             if (!File.Exists(ConfigFilePath))
             {
+                _isReadOnly = false;
                 return new ConfigLoadResult(new GroupsDocument(), ConfigLoadStatus.Created);
             }
 
@@ -70,11 +72,12 @@ public sealed class GroupRepository : IGroupRepository
             }
 
             var outcome = ConfigMigrator.Migrate(document);
+            _isReadOnly = outcome == MigrationOutcome.TooNew;
 
             return outcome switch
             {
-                // Refuse to downgrade: returning a default document here would let the next
-                // save overwrite a config that a newer build still understands.
+                // Return a usable empty document, but block all saves until a compatible
+                // configuration has been loaded, including background update-check saves.
                 MigrationOutcome.TooNew => new ConfigLoadResult(
                     new GroupsDocument(),
                     ConfigLoadStatus.TooNew,
@@ -92,6 +95,11 @@ public sealed class GroupRepository : IGroupRepository
 
         lock (_gate)
         {
+            if (_isReadOnly || document.Version > GroupsDocument.CurrentVersion)
+            {
+                throw new ConfigReadOnlyException();
+            }
+
             document.Version = GroupsDocument.CurrentVersion;
 
             var directory = Path.GetDirectoryName(ConfigFilePath);

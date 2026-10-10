@@ -61,7 +61,7 @@ public sealed class ShortcutResolver
                 ShortcutState.Invalid, null, "The shortcut has no target and no application ID.");
         }
 
-        if (_fs.FileExists(shortcut.Target))
+        if (_fs.FileExists(shortcut.Target) || _fs.DirectoryExists(shortcut.Target))
         {
             return new ShortcutResolution(ShortcutState.Ok, shortcut.Target);
         }

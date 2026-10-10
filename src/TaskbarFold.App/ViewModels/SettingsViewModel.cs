@@ -594,6 +594,10 @@ public sealed partial class SettingsViewModel : ObservableObject
             _repository.Save(_document);
             _onConfigChanged();
         }
+        catch (ConfigReadOnlyException ex)
+        {
+            StatusMessage = ex.Message;
+        }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             Log.Error("Could not save the configuration", ex);

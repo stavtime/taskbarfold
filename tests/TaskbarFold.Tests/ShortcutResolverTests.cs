@@ -36,6 +36,24 @@ public sealed class ShortcutResolverTests
     }
 
     [Fact]
+    public void Resolve_AllowsAnExistingFolderAddedFromItsPath()
+    {
+        using var temp = new TestDirectory();
+        var folder = Path.Combine(temp.Path, "My documents");
+        Directory.CreateDirectory(folder);
+        var shortcut = Shortcut.FromPath(folder);
+        var resolver = new ShortcutResolver(searchRoots: []);
+
+        var resolution = resolver.Resolve(shortcut);
+
+        resolution.State.Should().Be(ShortcutState.Ok);
+        resolution.ResolvedTarget.Should().Be(folder);
+        resolution.CanLaunch.Should().BeTrue();
+        resolver.TryRebind(shortcut).Should().BeFalse();
+        shortcut.Target.Should().Be(folder);
+    }
+
+    [Fact]
     public void Resolve_ReportsInvalidWhenThereIsNeitherTargetNorAppId()
     {
         var resolution = ResolverFor(new FakeFileSystem()).Resolve(new Shortcut { DisplayName = "Broken" });

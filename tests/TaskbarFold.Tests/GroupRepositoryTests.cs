@@ -193,6 +193,83 @@ public sealed class GroupRepositoryTests
     }
 
     [Fact]
+    public void Save_AfterLoadingAFutureSchema_ProtectsTheOriginalAndBackup()
+    {
+        using var temp = new TestDirectory();
+        var paths = new AppPaths(temp.Path);
+        var repository = new GroupRepository(paths);
+        const string future = """{"version":99,"groups":[{"name":"Future data"}]}""";
+        File.WriteAllText(paths.ConfigFile, future);
+        File.WriteAllText(repository.PreviousConfigFilePath, "previous backup");
+
+        var result = repository.Load();
+        result.Status.Should().Be(ConfigLoadStatus.TooNew);
+        result.Document.Settings.LastUpdateCheckUtc = DateTimeOffset.UtcNow;
+
+        Action save = () => repository.Save(result.Document);
+        save.Should().Throw<ConfigReadOnlyException>();
+        save.Should().Throw<ConfigReadOnlyException>();
+
+        File.ReadAllText(paths.ConfigFile).Should().Be(future);
+        File.ReadAllText(repository.PreviousConfigFilePath).Should().Be("previous backup");
+        File.Exists(paths.ConfigFile + ".tmp").Should().BeFalse();
+    }
+
+    [Fact]
+    public void Save_AfterLoadingACompatibleReplacement_IsAllowedAgain()
+    {
+        using var temp = new TestDirectory();
+        var paths = new AppPaths(temp.Path);
+        var repository = new GroupRepository(paths);
+        File.WriteAllText(paths.ConfigFile, """{"version":99,"groups":[]}""");
+        repository.Load();
+
+        File.WriteAllText(paths.ConfigFile, """{"version":1,"groups":[{"name":"Restored"}]}""");
+        var result = repository.Load();
+        result.Document.Groups[0].Name = "Edited";
+        repository.Save(result.Document);
+
+        repository.Load().Document.Groups.Single().Name.Should().Be("Edited");
+    }
+
+    [Fact]
+    public void Save_RejectsAFutureDocumentWithoutDowngradingIt()
+    {
+        using var temp = new TestDirectory();
+        var repository = new GroupRepository(new AppPaths(temp.Path));
+        var document = new GroupsDocument { Version = 99 };
+
+        Action save = () => repository.Save(document);
+
+        save.Should().Throw<ConfigReadOnlyException>();
+        document.Version.Should().Be(99);
+        File.Exists(repository.ConfigFilePath).Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData("""{"version":1,"groups":[null,{"name":"Keep","shortcuts":[{"displayName":"App","appUserModelId":"Contoso!App"}]},null]}""")]
+    [InlineData("""{"version":1,"groups":[{"name":"Keep","shortcuts":[null,{"displayName":"App","appUserModelId":"Contoso!App"},null]}]}""")]
+    public void Load_RemovesNullEntriesAndPreservesValidData(string json)
+    {
+        using var temp = new TestDirectory();
+        var paths = new AppPaths(temp.Path);
+        var repository = new GroupRepository(paths);
+        File.WriteAllText(paths.ConfigFile, json);
+
+        var result = repository.Load();
+
+        result.Status.Should().Be(ConfigLoadStatus.Migrated);
+        var group = result.Document.Groups.Should().ContainSingle().Subject;
+        group.Name.Should().Be("Keep");
+        group.Shortcuts.Should().ContainSingle().Which.AppUserModelId.Should().Be("Contoso!App");
+
+        repository.Save(result.Document);
+        var reloaded = repository.Load();
+        reloaded.Status.Should().Be(ConfigLoadStatus.Loaded);
+        reloaded.Document.Should().BeEquivalentTo(result.Document);
+    }
+
+    [Fact]
     public void SerializedJson_UsesCamelCaseAndOmitsDerivedMembers()
     {
         var json = JsonSerializer.Serialize(SampleDocument(), ConfigJsonContext.Default.GroupsDocument);

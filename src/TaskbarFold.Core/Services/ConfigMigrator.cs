@@ -67,6 +67,9 @@ public static class ConfigMigrator
 
         var seenGroupIds = new HashSet<Guid>();
 
+        // JSON arrays can contain null elements even when the C# element type is non-nullable.
+        changed |= document.Groups.RemoveAll(group => group is null) > 0;
+
         foreach (var group in document.Groups)
         {
             if (group.Id == Guid.Empty || !seenGroupIds.Add(group.Id))
@@ -89,6 +92,8 @@ public static class ConfigMigrator
             }
 
             var seenShortcutIds = new HashSet<Guid>();
+
+            changed |= group.Shortcuts.RemoveAll(shortcut => shortcut is null) > 0;
 
             foreach (var shortcut in group.Shortcuts)
             {

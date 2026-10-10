@@ -2,6 +2,15 @@ using TaskbarFold.Core.Models;
 
 namespace TaskbarFold.Core.Services;
 
+/// <summary>A newer configuration must not be overwritten by this build.</summary>
+public sealed class ConfigReadOnlyException : IOException
+{
+    public ConfigReadOnlyException()
+        : base("Settings cannot be saved because the configuration was written by a newer version of TaskbarFold. Update TaskbarFold to edit it.")
+    {
+    }
+}
+
 public enum ConfigLoadStatus
 {
     /// <summary>File read and parsed as-is.</summary>
@@ -37,5 +46,6 @@ public interface IGroupRepository
     ConfigLoadResult Load();
 
     /// <summary>Writes the document atomically. A crash mid-write never leaves a truncated config.</summary>
+    /// <exception cref="ConfigReadOnlyException">A newer schema was loaded or supplied.</exception>
     void Save(GroupsDocument document);
 }
