@@ -17,8 +17,12 @@
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
-    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
-    <PublishReadyToRun>false</PublishReadyToRun>
+    <!-- Every click on a pinned group starts this executable, so its start-up time is paid
+         every time. Measured for the whole signalling round trip: compressed without
+         ReadyToRun 129 ms, uncompressed with ReadyToRun 70 ms (156 MB instead of 63 MB),
+         and both together 388 ms. The two settings have to change as a pair. -->
+    <EnableCompressionInSingleFile>false</EnableCompressionInSingleFile>
+    <PublishReadyToRun>true</PublishReadyToRun>
   </PropertyGroup>
 
   <ItemGroup>

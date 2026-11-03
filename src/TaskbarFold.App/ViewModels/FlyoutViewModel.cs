@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -16,6 +17,9 @@ public sealed partial class FlyoutViewModel : ObservableObject
     private readonly Launcher _launcher;
     private readonly Action _requestClose;
     private readonly Action _persistOrder;
+
+    /// <summary>Searches for moved applications still under way, by shortcut id.</summary>
+    private readonly Dictionary<Guid, Task<bool>> _repairs = [];
 
     [ObservableProperty]
     private string _title = string.Empty;
@@ -94,11 +98,80 @@ public sealed partial class FlyoutViewModel : ObservableObject
         {
             var item = new ShortcutItemViewModel(group.Shortcuts[i]) { Ordinal = i + 1 };
             item.LoadIcon(_iconCache.GetOrCreate(group.Id, item.Model));
-            item.ApplyResolution(_resolver.Resolve(item.Model));
+            var resolution = _resolver.Check(item.Model);
+            item.ApplyResolution(resolution);
             AllItems.Add(item);
+
+            if (resolution.State == ShortcutState.Missing && !_resolver.RecentlyMissed(item.Model))
+            {
+                _ = RepairAsync(item.Model, ignoreRecentMiss: false);
+            }
         }
 
         ApplyFilter();
+    }
+
+    /// <summary>
+    /// Looks for a moved application off the UI thread and, when it turns up, records the
+    /// new path. An update that moves an executable therefore costs one search rather
+    /// than one on every opening of the flyout. Returns true when the shortcut was repaired.
+    /// </summary>
+    private Task<bool> RepairAsync(Shortcut shortcut, bool ignoreRecentMiss)
+    {
+        if (_repairs.TryGetValue(shortcut.Id, out var running))
+        {
+            return running;
+        }
+
+        var repair = SearchAndRebindAsync(shortcut, ignoreRecentMiss);
+        if (!repair.IsCompleted)
+        {
+            _repairs[shortcut.Id] = repair;
+        }
+
+        return repair;
+    }
+
+    private async Task<bool> SearchAndRebindAsync(Shortcut shortcut, bool ignoreRecentMiss)
+    {
+        try
+        {
+            var resolution = await Task.Run(() => _resolver.Resolve(shortcut, ignoreRecentMiss));
+
+            // The search can take a while, and the group is not frozen in the meantime:
+            // don't overwrite a path the user has just edited, or resurrect a removed entry.
+            if (!Group.Shortcuts.Contains(shortcut) ||
+                _resolver.Check(shortcut).State != ShortcutState.Missing ||
+                !ShortcutResolver.TryRebind(shortcut, resolution))
+            {
+                return false;
+            }
+
+            Log.Info($"'{shortcut.DisplayName}' was found at its new location: {shortcut.Target}");
+            _persistOrder();
+
+            var icon = await Task.Run(() => _iconCache.GetOrCreate(Group.Id, shortcut));
+
+            // Look the tile up only now: the flyout may have been reopened during the search,
+            // and every opening builds new tiles.
+            if (AllItems.Find(i => i.Model == shortcut) is { } item)
+            {
+                item.ApplyResolution(_resolver.Check(shortcut));
+                item.LoadIcon(icon);
+                ErrorMessage = null;
+            }
+
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Log.Warn($"Could not search for '{shortcut.DisplayName}': {ex.Message}");
+            return false;
+        }
+        finally
+        {
+            _repairs.Remove(shortcut.Id);
+        }
     }
 
     private static Brush BuildBackground(Group group)
@@ -181,20 +254,33 @@ public sealed partial class FlyoutViewModel : ObservableObject
     public ShortcutItemViewModel? SelectedItem => VisibleItems.FirstOrDefault(i => i.IsSelected);
 
     [RelayCommand]
-    public void Launch(ShortcutItemViewModel? item)
+    public void Launch(ShortcutItemViewModel? item) => LaunchWhenReady(item, forceAsAdmin: false);
+
+    /// <summary>
+    /// Async void so that an unexpected failure still reaches the application's dispatcher
+    /// handler and the log. With nothing to wait for it finishes before returning.
+    /// </summary>
+    private async void LaunchWhenReady(ShortcutItemViewModel? item, bool forceAsAdmin)
     {
         if (item is null)
         {
             return;
         }
 
-        var result = _launcher.Launch(item.Model);
+        // Clicked while its new location is still being looked for: wait for the answer
+        // instead of reporting as gone an application that is about to be found.
+        if (_repairs.TryGetValue(item.Id, out var repair))
+        {
+            await repair;
+        }
+
+        var result = _launcher.Launch(item.Model, forceAsAdmin);
 
         if (!result.Success)
         {
             // Stay open and explain, rather than vanishing and leaving the user guessing.
             ErrorMessage = result.Message;
-            item.ApplyResolution(_resolver.Resolve(item.Model));
+            item.ApplyResolution(_resolver.Check(item.Model));
             return;
         }
 
@@ -254,46 +340,21 @@ public sealed partial class FlyoutViewModel : ObservableObject
 
     /// <summary>Re-resolves a broken shortcut and keeps the fix if one was found.</summary>
     [RelayCommand]
-    public void Rebind(ShortcutItemViewModel? item)
+    public async Task Rebind(ShortcutItemViewModel? item)
     {
         if (item is null)
         {
             return;
         }
 
-        if (_resolver.TryRebind(item.Model))
-        {
-            item.ApplyResolution(_resolver.Resolve(item.Model));
-            item.LoadIcon(_iconCache.GetOrCreate(Group.Id, item.Model));
-            ErrorMessage = null;
-            _persistOrder();
-        }
-        else
+        if (!await RepairAsync(item.Model, ignoreRecentMiss: true))
         {
             ErrorMessage = $"{item.DisplayName} could not be found anywhere on this PC.";
         }
     }
 
     [RelayCommand]
-    public void RunAsAdmin(ShortcutItemViewModel? item)
-    {
-        if (item is null)
-        {
-            return;
-        }
-
-        var result = _launcher.Launch(item.Model, forceAsAdmin: true);
-        if (!result.Success)
-        {
-            ErrorMessage = result.Message;
-            return;
-        }
-
-        if (CloseOnLaunch)
-        {
-            _requestClose();
-        }
-    }
+    public void RunAsAdmin(ShortcutItemViewModel? item) => LaunchWhenReady(item, forceAsAdmin: true);
 
     [RelayCommand]
     public void OpenFileLocation(ShortcutItemViewModel? item)

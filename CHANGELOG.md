@@ -24,6 +24,13 @@ and the project uses [semantic versioning](https://semver.org/).
   handle on its own (see the README).
 - Every save now keeps the previous configuration as `groups.json.bak`.
 
+### Changed
+
+- **A click on a pinned group is faster.** The executable is now published with ReadyToRun
+  and without single-file compression, which takes the signalling round trip from about
+  130 ms to about 70 ms. The executable grows from 63 MB to 156 MB
+  on disk; the portable zip barely changes, from 58 MB to 63 MB.
+
 - **Update notifications that lead somewhere.** The tray notification is now clickable and
   opens the download page, and settings shows the running version, a **Check now** button
   that ignores the daily throttle, and the result of the last check.
@@ -39,6 +46,13 @@ and the project uses [semantic versioning](https://semver.org/).
 
 ### Fixed
 
+- An application that had moved, typically through an update, was searched for across the
+  disk on the UI thread every time its group opened and again when it was launched, and the
+  new path was never kept. That added about 240 ms to each opening. The search now runs in
+  the background, the new path is saved the first time it is found, and a search that found
+  nothing is not repeated for ten minutes unless you choose **Find it again**.
+- Clicking a pinned group while the resident was not running waited 1.5 seconds on a pipe
+  that could not exist before starting it. The resident now starts right away.
 - Searching installed applications now matches the application id as well as the display
   name. Codex is listed by Windows as "ChatGPT", so searching for "codex" found nothing.
 - Editing a group's name or emoji and immediately selecting another group discarded the

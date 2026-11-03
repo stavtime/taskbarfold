@@ -41,10 +41,16 @@ public static class Program
         var (x, y) = TaskbarInfo.Instance.GetCursorPosition();
         var message = new PipeMessage(PipeProtocol.ShowGroup, groupId, x, y);
 
-        var response = PipeClient.Send(message);
-        if (response is not null)
+        // Connecting to a pipe nobody created does not fail fast: it polls until the timeout.
+        // With no resident there is nothing to wait for, so the click goes straight to
+        // starting one instead of sitting through a second and a half of that first.
+        if (SingleInstance.IsRunning())
         {
-            return response == PipeProtocol.ResponseOk ? 0 : ExitSignalFailed;
+            var reply = PipeClient.Send(message);
+            if (reply is not null)
+            {
+                return reply == PipeProtocol.ResponseOk ? 0 : ExitSignalFailed;
+            }
         }
 
         // No resident listening. Start one and try again, exactly once: retrying in a
@@ -54,7 +60,7 @@ public static class Program
             return ExitSignalFailed;
         }
 
-        response = PipeClient.Send(message, timeoutMilliseconds: 8000);
+        var response = PipeClient.Send(message, timeoutMilliseconds: 8000);
         return response == PipeProtocol.ResponseOk ? 0 : ExitSignalFailed;
     }
 

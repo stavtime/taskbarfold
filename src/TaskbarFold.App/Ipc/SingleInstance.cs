@@ -20,20 +20,48 @@ public sealed class SingleInstance : IDisposable
     /// <summary>True when this process is the resident; false when one is already running.</summary>
     public bool IsOwner { get; }
 
-    public static SingleInstance Acquire()
+    /// <summary>Whether a resident holds the mutex. Answers immediately, without taking it.</summary>
+    public static bool IsRunning()
     {
-        string sid;
         try
         {
-            sid = WindowsIdentity.GetCurrent().User?.Value ?? "unknown";
-        }
-        catch (Exception ex) when (ex is System.Security.SecurityException or UnauthorizedAccessException)
-        {
-            sid = "unknown";
-        }
+            if (Mutex.TryOpenExisting(MutexName, out var mutex))
+            {
+                mutex.Dispose();
+                return true;
+            }
 
-        // Local\ rather than Global\: the scope is the logon session, matching the pipe.
-        var mutex = new Mutex(initiallyOwned: false, $"Local\\TaskbarFold.Instance.{sid}");
+            return false;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // It exists but belongs to an elevated resident, which can still be reached.
+            return true;
+        }
+    }
+
+    private static string MutexName
+    {
+        get
+        {
+            string sid;
+            try
+            {
+                sid = WindowsIdentity.GetCurrent().User?.Value ?? "unknown";
+            }
+            catch (Exception ex) when (ex is System.Security.SecurityException or UnauthorizedAccessException)
+            {
+                sid = "unknown";
+            }
+
+            // Local\ rather than Global\: the scope is the logon session, matching the pipe.
+            return $"Local\\TaskbarFold.Instance.{sid}";
+        }
+    }
+
+    public static SingleInstance Acquire()
+    {
+        var mutex = new Mutex(initiallyOwned: false, MutexName);
 
         bool owned;
         try

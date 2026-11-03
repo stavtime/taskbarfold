@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using TaskbarFold.Core.Models;
 
 namespace TaskbarFold.Core.Services;
@@ -31,11 +32,18 @@ public sealed record ShortcutResolution(ShortcutState State, string? ResolvedTar
 /// <summary>
 /// Decides whether a shortcut can still be launched, and looks for a moved application
 /// instead of leaving a permanently broken icon behind.
+///
+/// Looking for a moved application walks a good part of the disk, a few hundred
+/// milliseconds at best, so <see cref="Check"/> is the only member safe on a path the user
+/// is waiting for. <see cref="Resolve"/> may be called from any thread.
 /// </summary>
 public sealed class ShortcutResolver
 {
     private readonly IFileSystem _fs;
     private readonly IReadOnlyList<string> _searchRoots;
+
+    /// <summary>When each fruitless search ended, in <see cref="Environment.TickCount64"/> terms.</summary>
+    private readonly ConcurrentDictionary<string, long> _recentMisses = new(StringComparer.OrdinalIgnoreCase);
 
     public ShortcutResolver(IFileSystem? fileSystem = null, IReadOnlyList<string>? searchRoots = null)
     {
@@ -46,7 +54,17 @@ public sealed class ShortcutResolver
     /// <summary>How deep below a search root a relocated file is still looked for.</summary>
     public int MaxSearchDepth { get; init; } = 4;
 
-    public ShortcutResolution Resolve(Shortcut shortcut)
+    /// <summary>
+    /// How long a search that found nothing is not repeated. An uninstalled application
+    /// would otherwise cost a full walk of every search root each time it is looked at.
+    /// </summary>
+    public TimeSpan MissMemory { get; init; } = TimeSpan.FromMinutes(10);
+
+    /// <summary>
+    /// Reports the shortcut's state from the recorded path alone, without searching. A
+    /// target that moved is reported as <see cref="ShortcutState.Missing"/>.
+    /// </summary>
+    public ShortcutResolution Check(Shortcut shortcut)
     {
         ArgumentNullException.ThrowIfNull(shortcut);
 
@@ -66,26 +84,63 @@ public sealed class ShortcutResolver
             return new ShortcutResolution(ShortcutState.Ok, shortcut.Target);
         }
 
-        var relocated = FindRelocated(shortcut);
-        if (relocated is not null)
-        {
-            return new ShortcutResolution(
-                ShortcutState.Relocated, relocated, $"Moved to {relocated}.");
-        }
-
         return new ShortcutResolution(
             ShortcutState.Missing, null, $"{shortcut.Target} no longer exists.");
     }
 
     /// <summary>
-    /// Applies a relocation to the shortcut so the fix survives the next save.
-    /// Returns true when anything changed.
+    /// Like <see cref="Check"/>, but goes looking for a target that is gone.
     /// </summary>
-    public bool TryRebind(Shortcut shortcut)
+    /// <param name="shortcut">The shortcut to examine. It is not modified.</param>
+    /// <param name="ignoreRecentMiss">
+    /// Search even if the last search came up empty, for when the user explicitly asks.
+    /// </param>
+    public ShortcutResolution Resolve(Shortcut shortcut, bool ignoreRecentMiss = false)
+    {
+        var resolution = Check(shortcut);
+        if (resolution.State != ShortcutState.Missing)
+        {
+            return resolution;
+        }
+
+        if (!ignoreRecentMiss && RecentlyMissed(shortcut))
+        {
+            return resolution;
+        }
+
+        var relocated = FindRelocated(shortcut);
+        if (relocated is null)
+        {
+            _recentMisses[MissKey(shortcut)] = Environment.TickCount64;
+            return resolution;
+        }
+
+        _recentMisses.TryRemove(MissKey(shortcut), out _);
+        return new ShortcutResolution(
+            ShortcutState.Relocated, relocated, $"Moved to {relocated}.");
+    }
+
+    /// <summary>True while a recent fruitless search makes another one pointless.</summary>
+    public bool RecentlyMissed(Shortcut shortcut)
     {
         ArgumentNullException.ThrowIfNull(shortcut);
 
-        var resolution = Resolve(shortcut);
+        return _recentMisses.TryGetValue(MissKey(shortcut), out var missedAt) &&
+               Environment.TickCount64 - missedAt < MissMemory.TotalMilliseconds;
+    }
+
+    private static string MissKey(Shortcut shortcut) => $"{shortcut.Target}|{shortcut.FallbackFileName}";
+
+    /// <summary>
+    /// Applies a relocation found by <see cref="Resolve"/> to the shortcut, so the fix
+    /// survives the next save and the search never has to run for it again.
+    /// Returns true when anything changed.
+    /// </summary>
+    public static bool TryRebind(Shortcut shortcut, ShortcutResolution resolution)
+    {
+        ArgumentNullException.ThrowIfNull(shortcut);
+        ArgumentNullException.ThrowIfNull(resolution);
+
         if (resolution.State != ShortcutState.Relocated || resolution.ResolvedTarget is null)
         {
             return false;

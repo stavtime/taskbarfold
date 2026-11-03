@@ -26,15 +26,12 @@ public sealed class Launcher
     {
         ArgumentNullException.ThrowIfNull(shortcut);
 
-        var resolution = _resolver.Resolve(shortcut);
+        // Check, not Resolve: this runs on the UI thread with the flyout on screen. Moved
+        // applications are the flyout's to repair, in the background.
+        var resolution = _resolver.Check(shortcut);
         if (!resolution.CanLaunch)
         {
             return new LaunchResult(false, resolution.Message ?? "This shortcut cannot be opened.");
-        }
-
-        if (resolution.State == ShortcutState.Relocated)
-        {
-            Log.Info($"'{shortcut.DisplayName}' was found at its new location: {resolution.ResolvedTarget}");
         }
 
         try

@@ -49,7 +49,7 @@ public sealed class ShortcutResolverTests
         resolution.State.Should().Be(ShortcutState.Ok);
         resolution.ResolvedTarget.Should().Be(folder);
         resolution.CanLaunch.Should().BeTrue();
-        resolver.TryRebind(shortcut).Should().BeFalse();
+        ShortcutResolver.TryRebind(shortcut, resolution).Should().BeFalse();
         shortcut.Target.Should().Be(folder);
     }
 
@@ -114,7 +114,9 @@ public sealed class ShortcutResolverTests
             FallbackFileName = "editor.exe",
         };
 
-        ResolverFor(fs).TryRebind(shortcut).Should().BeTrue();
+        var resolution = ResolverFor(fs).Resolve(shortcut);
+
+        ShortcutResolver.TryRebind(shortcut, resolution).Should().BeTrue();
 
         shortcut.Target.Should().Be(@"C:\Program Files\Editor\app-2.0\editor.exe");
         shortcut.WorkingDirectory.Should().Be(@"C:\Program Files\Editor\app-2.0");
@@ -126,8 +128,90 @@ public sealed class ShortcutResolverTests
         var fs = new FakeFileSystem().AddFile(@"C:\Program Files\Thing\thing.exe");
         var shortcut = Shortcut.FromPath(@"C:\Program Files\Thing\thing.exe");
 
-        ResolverFor(fs).TryRebind(shortcut).Should().BeFalse();
+        var resolution = ResolverFor(fs).Resolve(shortcut);
+
+        ShortcutResolver.TryRebind(shortcut, resolution).Should().BeFalse();
         shortcut.Target.Should().Be(@"C:\Program Files\Thing\thing.exe");
+    }
+
+    [Fact]
+    public void Check_ReportsAMovedApplicationAsMissingWithoutSearching()
+    {
+        var fs = new CountingFileSystem(new FakeFileSystem().AddFile(@"C:\Program Files\Editor\app-2.0\editor.exe"));
+
+        var resolution = new ShortcutResolver(fs, [ProgramFiles]).Check(MovedEditor());
+
+        resolution.State.Should().Be(ShortcutState.Missing);
+        resolution.CanLaunch.Should().BeFalse();
+        fs.Enumerations.Should().Be(0);
+    }
+
+    [Fact]
+    public void Resolve_DoesNotRepeatASearchThatJustFoundNothing()
+    {
+        var inner = new FakeFileSystem().AddDirectory(ProgramFiles);
+        var fs = new CountingFileSystem(inner);
+        var resolver = new ShortcutResolver(fs, [ProgramFiles]);
+
+        resolver.Resolve(MovedEditor()).State.Should().Be(ShortcutState.Missing);
+        var afterFirstSearch = fs.Enumerations;
+        resolver.RecentlyMissed(MovedEditor()).Should().BeTrue();
+
+        // Even an application that has since appeared waits out the memory...
+        inner.AddFile(@"C:\Program Files\Editor\app-2.0\editor.exe");
+        resolver.Resolve(MovedEditor()).State.Should().Be(ShortcutState.Missing);
+
+        afterFirstSearch.Should().BeGreaterThan(0);
+        fs.Enumerations.Should().Be(afterFirstSearch);
+
+        // ...unless the user explicitly asks to look again.
+        var resolution = resolver.Resolve(MovedEditor(), ignoreRecentMiss: true);
+        resolution.State.Should().Be(ShortcutState.Relocated);
+
+        // A success clears the memory, so the next ordinary call searches too.
+        resolver.RecentlyMissed(MovedEditor()).Should().BeFalse();
+        resolver.Resolve(MovedEditor()).State.Should().Be(ShortcutState.Relocated);
+    }
+
+    [Fact]
+    public void Resolve_SearchesAgainOnceTheMemoryOfAMissHasExpired()
+    {
+        var fs = new FakeFileSystem().AddDirectory(ProgramFiles);
+        var resolver = new ShortcutResolver(fs, [ProgramFiles]) { MissMemory = TimeSpan.Zero };
+
+        resolver.Resolve(MovedEditor()).State.Should().Be(ShortcutState.Missing);
+
+        fs.AddFile(@"C:\Program Files\Editor\app-2.0\editor.exe");
+        resolver.Resolve(MovedEditor()).State.Should().Be(ShortcutState.Relocated);
+    }
+
+    [Fact]
+    public void Resolve_RemembersAMissPerShortcutRatherThanForAllOfThem()
+    {
+        var fs = new FakeFileSystem().AddFile(@"C:\Program Files\Other\other.exe");
+        var resolver = new ShortcutResolver(fs, [ProgramFiles]);
+
+        resolver.Resolve(MovedEditor()).State.Should().Be(ShortcutState.Missing);
+
+        var other = new Shortcut
+        {
+            Target = @"C:\Program Files\Other\old\other.exe",
+            FallbackFileName = "other.exe",
+        };
+
+        resolver.Resolve(other).State.Should().Be(ShortcutState.Relocated);
+    }
+
+    [Fact]
+    public void TryRebind_MakesLaterChecksReportTheShortcutAsFine()
+    {
+        var fs = new FakeFileSystem().AddFile(@"C:\Program Files\Editor\app-2.0\editor.exe");
+        var resolver = ResolverFor(fs);
+        var shortcut = MovedEditor();
+
+        ShortcutResolver.TryRebind(shortcut, resolver.Resolve(shortcut)).Should().BeTrue();
+
+        resolver.Check(shortcut).State.Should().Be(ShortcutState.Ok);
     }
 
     [Fact]
@@ -146,5 +230,38 @@ public sealed class ShortcutResolverTests
         // A search that walked the whole drive would freeze the flyout; bounding the
         // depth means a very deeply nested match is reported as missing instead.
         resolver.Resolve(shortcut).State.Should().Be(ShortcutState.Missing);
+    }
+
+    private static Shortcut MovedEditor() => new()
+    {
+        DisplayName = "Editor",
+        Target = @"C:\Program Files\Editor\app-1.0\editor.exe",
+        FallbackFileName = "editor.exe",
+    };
+
+    /// <summary>Counts the directory listings a search performs.</summary>
+    private sealed class CountingFileSystem(FakeFileSystem inner) : IFileSystem
+    {
+        public int Enumerations { get; private set; }
+
+        public bool FileExists(string path) => inner.FileExists(path);
+
+        public bool DirectoryExists(string path) => inner.DirectoryExists(path);
+
+        public IEnumerable<string> EnumerateDirectories(string path)
+        {
+            Enumerations++;
+            return inner.EnumerateDirectories(path);
+        }
+
+        public IEnumerable<string> EnumerateFiles(string path, string searchPattern)
+        {
+            Enumerations++;
+            return inner.EnumerateFiles(path, searchPattern);
+        }
+
+        public DateTime GetLastWriteTimeUtc(string path) => inner.GetLastWriteTimeUtc(path);
+
+        public long GetFileLength(string path) => inner.GetFileLength(path);
     }
 }
